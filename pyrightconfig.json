@@ -1,0 +1,11 @@
+{
+  "include": ["src"],
+  "exclude": ["**/node_modules", "**/__pycache__"],
+  "typeCheckingMode": "basic",
+  "useLibraryCodeForTypes": true,
+  "reportMissingImports": "warning",
+  "venvPath": ".",
+  "venv": ".venv",
+  "pythonPath": ".venv/bin/python",
+  "extraPaths": ["src"]
+}

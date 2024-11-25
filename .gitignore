@@ -1,0 +1,25 @@
+# Python
+__pycache__/
+*.py[cod]
+.Python
+*.so
+
+# Virtual Environment
+.venv/
+venv/
+
+# Environment Variables
+.env
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# Project specific
+data/songs/*
+!data/songs/.gitkeep
+
+# OS
+.DS_Store
+Thumbs.db
