@@ -24,5 +24,5 @@ black
 isort
 
 nltk>=3.8.1
-
+ftfy
 ruff
