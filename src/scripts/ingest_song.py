@@ -7,6 +7,7 @@ from src.flows.ingestion.subflows import song_ingestion_flow
 @click.command()
 @click.option('--song', '-s', required=True, help='Name of the song')
 @click.option('--artist', '-a', required=True, help='Name of the artist')
+@click.option('--preprocess', '-p', is_flag=True, help='Run preprocessing after ingestion')
 @click.option('--data-dir', '-d', 
               default=str(Path(__file__).parent.parent.parent / "data"),
               help='Base directory for data storage')
