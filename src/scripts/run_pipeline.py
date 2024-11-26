@@ -1,113 +1,159 @@
-"""CLI to run the full lyrics processing pipeline."""
-
-import click
+"""Run the complete pipeline for a song."""
+import argparse
+import logging
 from pathlib import Path
-import json
-from typing import Optional, Dict, Any
+import asyncio
+from typing import Optional
+
 import src.flows.ingestion.subflows
 import src.flows.preprocessing.subflows
 import src.flows.generation.main
-from src.utils.io.paths import get_songs_dir
 
-@click.command()
-@click.option('--song', '-s', required=True, help='Name of the song')
-@click.option('--artist', '-a', required=True, help='Name of the artist')
-@click.option('--data-dir', '-d', 
-              default=str(Path(__file__).parent.parent.parent / "data"),
-              help='Base directory for data storage')
-@click.option('--steps', '-t', 
-              type=click.Choice(['ingest', 'preprocess', 'generate', 'all']), 
-              default='all',
-              help='Pipeline steps to run')
-@click.option('--batch-size', '-b', 
-              type=int, 
-              default=5,
-              help='Number of lines to process in parallel during vocabulary analysis')
-def main(song: str, artist: str, data_dir: str, steps: str, batch_size: int) -> int:
-    """Run the full lyrics processing pipeline.
+logger = logging.getLogger(__name__)
+
+def find_song_id(artist: str, song: str) -> Optional[str]:
+    """Find song ID from artist and song name."""
+    import json
     
-    Example:
-        python -m src.scripts.run_pipeline --song "In My Life" --artist "The Beatles"
-        python -m src.scripts.run_pipeline -s "In My Life" -a "The Beatles" -t ingest
+    try:
+        # Load songs.json which contains the mapping
+        with open("data/songs.json", "r") as f:
+            songs = json.load(f)
+            
+        # Look for matching song in list
+        for song_data in songs:
+            if song_data.get("artist_name", "").lower() == artist.lower() and \
+               song_data.get("song_name", "").lower() == song.lower():
+                return str(song_data.get("id"))
+                
+        print(f"No match found for {artist} - {song}")
+        print("Available songs:")
+        for song_data in songs:
+            print(f"  - {song_data.get('artist_name')} - {song_data.get('song_name')}")
+    except FileNotFoundError:
+        print("songs.json not found. Please make sure the song is ingested first.")
+    except json.JSONDecodeError:
+        print("Error reading songs.json. File may be corrupted.")
+    
+    return None
+
+def run_pipeline(
+    artist: Optional[str] = None,
+    song: Optional[str] = None,
+    song_id: Optional[str] = None,
+    steps: str = "all",
+    batch_size: int = 15,
+    max_retries: int = 3
+) -> None:
+    """Run the complete pipeline for a song.
+    
+    Args:
+        artist: Artist name (required for ingestion)
+        song: Song title (required for ingestion)
+        song_id: Genius song ID (can be provided instead of artist/song)
+        steps: Pipeline steps to run ("all", "ingest", "preprocess", "analyze", "generate")
+        batch_size: Batch size for analysis tasks
+        max_retries: Maximum number of retries for failed tasks
     """
     try:
-        result: Optional[Dict[str, Any]] = None
-        song_id: Optional[int] = None
+        # Validate parameters
+        if steps not in ["all", "ingest", "preprocess", "analyze", "generate"]:
+            print(f"Invalid steps parameter: {steps}")
+            print("Valid options: all, ingest, preprocess, analyze, generate")
+            return
+            
+        # If song_id not provided, try to find it from artist and song name
+        if not song_id and artist and song:
+            song_id = find_song_id(artist, song)
+            if not song_id:
+                print(f"Could not find song ID for {artist} - {song}")
+                print("Please make sure the song is ingested first using the ingestion pipeline.")
+                return
         
-        if steps in ['ingest', 'all']:
-            print("\n📥 Running ingestion...")
+        if not song_id and steps not in ["ingest"]:
+            print("Either song_id or both artist and song name must be provided")
+            return
+            
+        # Set up paths
+        song_path = Path("data/songs") / str(song_id) if song_id else None
+        
+        # Run ingestion if needed
+        if steps in ["all", "ingest"]:
+            print("\n🔄 Running ingestion...")
+            if not song or not artist:
+                print("\n❌ Ingestion failed: song and artist names are required for ingestion")
+                return
             result = src.flows.ingestion.subflows.song_ingestion_flow(
                 song_name=song,
                 artist_name=artist,
-                base_path=data_dir
+                base_path=str(Path.cwd())
             )
+            if not result or not result.get("song_path"):
+                print("\n❌ Ingestion failed")
+                return
             
-            if not result or not result.get('id'):
-                print("❌ Ingestion failed - no song ID returned")
-                return 1
-                
-            song_id = result['id']
-            print("\nIngestion Results:")
-            for key, value in result.items():
-                print(f"{key}: {value}")
-            
-            # If we're only doing ingestion, return success
-            if steps == 'ingest':
-                print("\n✅ Ingestion completed successfully")
-                return 0
-
-        if steps in ['preprocess', 'all']:
+        # Run preprocessing if needed
+        if steps in ["all", "preprocess"]:
             print("\n🔄 Running preprocessing...")
-            # If we're only preprocessing, try to find the song ID from metadata
             if not song_id:
-                # Look through all song directories for matching metadata
-                songs_dir = get_songs_dir(data_dir)
-                if not songs_dir.exists():
-                    print(f"❌ Songs directory not found at {songs_dir}")
-                    return 1
+                print("\n❌ Preprocessing failed: song_id is required")
+                return
+            try:
+                song_id_int = int(song_id)
+            except ValueError:
+                print(f"\n❌ Preprocessing failed: invalid song_id '{song_id}'")
+                return
                 
-                for song_dir in songs_dir.glob("*"):
-                    metadata_file = song_dir / "genius_metadata.json"
-                    if metadata_file.exists():
-                        try:
-                            with open(metadata_file) as f:
-                                metadata = json.load(f)
-                            if metadata['title'].lower() == song.lower() and \
-                               metadata['artist'].lower() == artist.lower():
-                                song_id = int(song_dir.name)
-                                break
-                        except (json.JSONDecodeError, KeyError) as e:
-                            print(f"Warning: Invalid metadata file in {song_dir}: {e}")
-                            continue
-                
-                if not song_id:
-                    print(f"❌ Could not find song ID for {song} by {artist}")
-                    return 1
-
-            success = src.flows.preprocessing.subflows.process_song_annotations_flow(song_id=song_id, base_path=data_dir)
+            success = src.flows.preprocessing.subflows.process_song_annotations_flow(
+                song_id=song_id_int,
+                base_path=str(Path.cwd())
+            )
             if not success:
                 print("\n❌ Preprocessing failed")
-                return 1
-                
-            if steps == 'preprocess':
-                print("\n✅ Preprocessing completed successfully")
-                return 0
-                
-        if steps in ['generate', 'all']:
+                return
+            
+        # Run vocabulary analysis if needed
+        if steps in ["all", "analyze", "generate"]:
             print("\n🔍 Running vocabulary analysis...")
-            import asyncio
-            asyncio.run(src.flows.generation.main.main(artist=artist, song=song, batch_size=batch_size))
+            if not song_path or not song_path.exists():
+                print("\n❌ Vocabulary analysis failed: song path not found")
+                return
+            success = asyncio.run(src.flows.generation.main.main(
+                song_path=str(song_path)
+            ))
+            if not success:
+                print("\n❌ Vocabulary analysis failed")
+                return
             
-            if steps == 'generate':
-                print("\n✅ Generation completed successfully")
-                return 0
-            
-        print("\n✅ Pipeline completed successfully")
-        return 0
+        print("\n✅ Pipeline completed successfully!")
             
     except Exception as e:
-        print(f"\n❌ Pipeline failed with error: {e}")
-        return 1
+        print(f"\n❌ Pipeline failed with error: {str(e)}")
+        return
+
+def main():
+    """Main entry point."""
+    parser = argparse.ArgumentParser(description="Run the complete pipeline for a song")
+    parser.add_argument("--song", "-s", help="Song title")
+    parser.add_argument("--artist", "-a", help="Artist name")
+    parser.add_argument("--song-id", "-i", help="Song ID (if already ingested)")
+    parser.add_argument("--steps", default="all",
+                      choices=["all", "ingest", "preprocess", "analyze", "generate"],
+                      help="Pipeline steps to run")
+    parser.add_argument("--batch-size", "-b", type=int, default=15,
+                      help="Batch size for analysis tasks")
+    parser.add_argument("--max-retries", "-r", type=int, default=3,
+                      help="Maximum number of retries for failed tasks")
+    
+    args = parser.parse_args()
+    run_pipeline(
+        artist=args.artist,
+        song=args.song,
+        song_id=args.song_id,
+        steps=args.steps,
+        batch_size=args.batch_size,
+        max_retries=args.max_retries
+    )
 
 if __name__ == "__main__":
-    exit(main())
+    main()

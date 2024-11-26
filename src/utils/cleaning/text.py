@@ -1,8 +1,12 @@
 """Core text cleaning utilities."""
 import re
-from typing import Tuple, List, Dict, Any
+import json
+from typing import Tuple, List, Dict, Any, Union
 from ftfy import fix_text
 from ftfy.fixes import uncurl_quotes
+import logging
+
+logger = logging.getLogger(__name__)
 
 class TextCleaningError(Exception):
     """Custom exception for text cleaning errors."""
@@ -113,3 +117,177 @@ def extract_text_from_dom(dom: Dict[str, Any]) -> str:
         return ''.join(text).strip()
     except Exception as e:
         raise TextCleaningError(f"Failed to extract text from DOM: {str(e)}") from e
+
+def clean_json_array(array_content: str) -> str:
+    """Clean array content by removing explanatory text in parentheses."""
+    items = []
+    current_item = ""
+    in_quotes = False
+    
+    for char in array_content:
+        if char == '"' and (not current_item or current_item[-1] != '\\'):
+            in_quotes = not in_quotes
+            current_item += char
+        elif char == '(' and not in_quotes:
+            # Stop collecting when we hit explanatory text
+            if current_item:
+                items.append(current_item.strip())
+            current_item = ""
+        elif char == ',' and not in_quotes:
+            if current_item:
+                items.append(current_item.strip())
+            current_item = ""
+        else:
+            current_item += char
+    
+    if current_item:
+        items.append(current_item.strip())
+    
+    # Clean each item and wrap in array
+    cleaned_items = []
+    for item in items:
+        item = item.strip().strip('"')  # Remove quotes and whitespace
+        if item:  # Only add non-empty items
+            cleaned_items.append(f'"{item}"')
+    
+    return f'[{",".join(cleaned_items)}]'
+
+def clean_json_str(json_str: str) -> str:
+    """Clean JSON string by handling arrays with explanatory text."""
+    # Remove explanatory text in parentheses from arrays
+    json_str = re.sub(r'\[([^\]]*?)\]', lambda m: clean_json_array(m.group(1)), json_str)
+    # Remove trailing commas
+    json_str = re.sub(r',(\s*[}\]])', r'\1', json_str)
+    return json_str
+
+def fix_vocabulary_json(content: str) -> str:
+    """Fix common JSON issues in vocabulary responses."""
+    if not content:
+        return content
+
+    # Try to find the vocabulary array
+    vocab_match = re.search(r'"vocabulary":\s*(\[.*?\])', content, re.DOTALL)
+    if not vocab_match:
+        return content
+
+    vocab_str = vocab_match.group(1)
+
+    # Fix unterminated strings by adding missing quotes
+    vocab_str = re.sub(r'("[^"]*?)\n', r'\1"', vocab_str)  # Fix strings broken by newlines
+    vocab_str = re.sub(r'("[^"]*?)$', r'\1"', vocab_str)  # Fix strings at end of content
+    vocab_str = re.sub(r'([{,]\s*"[^"]*?)\s*([},])', r'\1"', vocab_str)  # Fix unterminated property values
+    vocab_str = re.sub(r'([{,]\s*[^"\s{},][^:}]*?):', r'"\1":', vocab_str)  # Fix unquoted property names
+    
+    # Fix missing quotes around property values
+    vocab_str = re.sub(r':\s*([^"\s{}\[\],][^,}]*?)([,}])', r': "\1"\2', vocab_str)
+    
+    # Fix missing commas between array elements
+    vocab_str = re.sub(r'}\s*{', '},{', vocab_str)
+    vocab_str = re.sub(r']\s*\[', '],[', vocab_str)
+    
+    # Fix incomplete objects by adding missing closing braces
+    open_braces = vocab_str.count('{')
+    close_braces = vocab_str.count('}')
+    if open_braces > close_braces:
+        vocab_str = vocab_str.rstrip() + ('}'* (open_braces - close_braces))
+
+    # Fix incomplete arrays by adding missing closing brackets
+    open_brackets = vocab_str.count('[')
+    close_brackets = vocab_str.count(']')
+    if open_brackets > close_brackets:
+        vocab_str = vocab_str.rstrip() + (']' * (open_brackets - close_brackets))
+
+    # Fix common formatting issues
+    vocab_str = vocab_str.replace('\\n', ' ')  # Replace newlines in strings
+    vocab_str = re.sub(r'\s+', ' ', vocab_str)  # Normalize whitespace
+    vocab_str = re.sub(r',\s*([}\]])', r'\1', vocab_str)  # Remove trailing commas
+    vocab_str = re.sub(r'([{,])\s*([^"\s])', r'\1"\2', vocab_str)  # Add missing opening quotes
+    
+    # Fix truncated objects by ensuring required properties
+    required_props = ['term', 'vocabulary_type', 'definition', 'usage_notes', 'variants']
+    for prop in required_props:
+        if f'"{prop}"' not in vocab_str.lower():
+            # Add missing property before the closing brace
+            vocab_str = re.sub(r'}(?=[^}]*$)', f', "{prop}": ""}}', vocab_str)
+    
+    # Validate the structure
+    try:
+        fixed_content = content[:vocab_match.start(1)] + vocab_str + content[vocab_match.end(1):]
+        json.loads(fixed_content)  # Test if valid JSON
+        return fixed_content
+    except json.JSONDecodeError as e:
+        logger.warning(f"Failed to parse JSON structure: {str(e)}")
+        try:
+            # More aggressive cleaning
+            vocab_str = re.sub(r'([^"]),([^"\s])', r'\1, "\2', vocab_str)  # Fix unquoted values after commas
+            vocab_str = re.sub(r'([^"])}', r'\1"}', vocab_str)  # Fix missing quotes before closing braces
+            vocab_str = re.sub(r'([^"])]', r'\1"]', vocab_str)  # Fix missing quotes before closing brackets
+            fixed_content = content[:vocab_match.start(1)] + vocab_str + content[vocab_match.end(1):]
+            json.loads(fixed_content)  # Test if valid JSON
+            return fixed_content
+        except json.JSONDecodeError as e2:
+            logger.warning(f"Failed to parse JSON even after aggressive cleaning: {str(e2)}")
+            return content
+
+def fix_missing_prop(obj_str: str, prop: str) -> str:
+    """Add missing property to a JSON object string."""
+    if not re.search(f'"{prop}":', obj_str):
+        if obj_str.rstrip().endswith('}'):
+            return obj_str[:-1] + f', "{prop}": ""' + '}'
+        return obj_str + f', "{prop}": ""' + '}'
+    return obj_str + '}'
+
+def extract_and_clean_json(content: str) -> Union[Dict[str, Any], str]:
+    """Extract and clean JSON from text content."""
+    if not content:
+        return content
+    
+    logger.debug("=== CLEAN JSON START ===")
+    logger.debug(f"Raw content type: {type(content)}")
+    logger.debug(f"Raw content: {repr(content)}")
+    
+    # First try to parse as-is since it might be valid JSON
+    try:
+        return json.loads(content)
+    except json.JSONDecodeError:
+        logger.debug("Initial JSON parse failed, trying to clean")
+    
+    # Try to extract JSON from markdown code blocks
+    json_block_match = re.search(r'```json\s*(.*?)\s*```', content, re.DOTALL)
+    if json_block_match:
+        try:
+            json_str = json_block_match.group(1).strip()
+            logger.debug(f"Found JSON block: {json_str}")
+            return json.loads(json_str)
+        except json.JSONDecodeError as e:
+            logger.warning(f"Failed to parse JSON from code block: {str(e)}")
+    
+    # If no JSON block or parsing failed, try to find any JSON structure
+    json_match = re.search(r'(\{[\s\S]*?\})', content)
+    if json_match:
+        try:
+            json_str = json_match.group(1)
+            logger.debug(f"Found JSON structure: {json_str}")
+            return json.loads(json_str)
+        except json.JSONDecodeError as e:
+            logger.warning(f"Failed to parse JSON structure: {str(e)}")
+            # Try one more time with more aggressive cleaning
+            try:
+                # Remove any non-JSON characters
+                json_str = re.sub(r'[^\[\]{}",:\s\w\-\'.]', '', json_str)
+                return json.loads(json_str)
+            except json.JSONDecodeError as e:
+                logger.warning(f"Failed to parse JSON even after aggressive cleaning: {str(e)}")
+    
+    # If we couldn't parse as JSON, try to fix common issues in vocabulary responses
+    try:
+        fixed_json = fix_vocabulary_json(content)
+        return json.loads(fixed_json)
+    except json.JSONDecodeError:
+        logger.warning("Failed to fix vocabulary JSON")
+    
+    logger.debug("=== CLEAN JSON END ===")
+    logger.debug(f"Cleaned content: {repr(content)}")
+    
+    # If all parsing attempts fail, return the original content
+    return content

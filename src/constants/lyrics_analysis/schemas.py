@@ -1,6 +1,4 @@
 """JSON schemas for lyrics analysis validation."""
-from typing import List
-
 from .linguistic import CEFRLevel, GrammaticalTense, SentenceType
 from .rhetorical import RhetoricalDevice, SemanticLayer
 

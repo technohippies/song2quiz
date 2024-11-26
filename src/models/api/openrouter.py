@@ -1,233 +1,94 @@
-"""Models for OpenRouter API requests and responses."""
-
-from dataclasses import dataclass
-from typing import List, Optional, Dict, Any, Union
-from enum import Enum
+"""OpenRouter API client."""
 import json
-import asyncio
-from aiohttp import ClientSession, ClientTimeout
-from logging import Logger
+import logging
+from typing import Dict, Any, Optional, List
+import httpx
+from src.utils.settings import settings
+from src.constants.api import OPENROUTER_MODELS
 
-class Role(Enum):
-    """Roles in a chat conversation."""
-    SYSTEM = "system"
-    USER = "user"
-    ASSISTANT = "assistant"
+logger = logging.getLogger(__name__)
 
-@dataclass
-class Message:
-    """A single message in the conversation."""
-    role: Role
-    content: str
-
-@dataclass
-class ChatCompletionRequest:
-    """Request structure for OpenRouter chat completion."""
-    messages: List[Message]
-    model: str
-    temperature: float = 0.7
-    max_tokens: Optional[int] = None
-    stream: bool = False
-    
-    def to_dict(self) -> Dict[str, Any]:
-        """Convert to OpenRouter API format."""
-        return {
-            "messages": [
-                {"role": msg.role.value, "content": msg.content}
-                for msg in self.messages
-            ],
-            "model": self.model,
-            "temperature": self.temperature,
-            **({"max_tokens": self.max_tokens} if self.max_tokens else {}),
-            "stream": self.stream
-        }
-
-@dataclass
-class CompletionChoice:
-    """A single completion choice from the response."""
-    index: int
-    message: Message
-    finish_reason: Optional[str] = None
-
-@dataclass
-class Usage:
-    """Token usage information."""
-    prompt_tokens: int
-    completion_tokens: int
-    total_tokens: int
-
-@dataclass
-class ChatCompletionResponse:
-    """Response structure from OpenRouter chat completion."""
-    id: str
-    model: str
-    created: int  # Unix timestamp
-    choices: List[CompletionChoice]
-    usage: Usage
-
-    @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> 'ChatCompletionResponse':
-        """Create from OpenRouter API response."""
-        choices = [
-            CompletionChoice(
-                index=c["index"],
-                message=Message(
-                    role=Role(c["message"]["role"]),
-                    content=c["message"]["content"]
-                ),
-                finish_reason=c.get("finish_reason")
-            )
-            for c in data["choices"]
-        ]
-        
-        usage = Usage(
-            prompt_tokens=data["usage"]["prompt_tokens"],
-            completion_tokens=data["usage"]["completion_tokens"],
-            total_tokens=data["usage"]["total_tokens"]
-        )
-        
-        return cls(
-            id=data["id"],
-            model=data["model"],
-            created=data["created"],
-            choices=choices,
-            usage=usage
-        )
+class OpenRouterAPIError(Exception):
+    """Custom exception for OpenRouter API errors."""
+    pass
 
 class OpenRouterAPI:
-    def __init__(self, model: str, headers: Dict[str, str], logger: Logger):
-        self.model = model
-        self.headers = headers
-        self.logger = logger
-        self.BASE_URL = "https://api.openrouter.com/v1/chat/completions"
-        self.INITIAL_RETRY_DELAY = 1
-        self.MAX_RETRIES = 3
-        self.MAX_RETRY_DELAY = 30
-        self.TIMEOUT = 30
-
-    async def _wait_for_rate_limit(self):
-        # implement rate limit logic here
-        pass
-
-    def clean_response(self, content: str) -> Union[str, Dict[str, Any]]:
-        # implement response cleaning logic here
-        return content
-
-    async def complete(
-        self,
-        prompt: str,
-        system_prompt: Optional[str] = None,
-        temperature: float = 0.7,
-        max_tokens: Optional[int] = None,
-        model: Optional[str] = None
-    ) -> Union[str, Dict[str, Any]]:
-        """Make request to OpenRouter API with retry logic and fallback for blocklist events"""
-        messages = []
-        if system_prompt:
-            messages.append({"role": "system", "content": system_prompt})
-        messages.append({"role": "user", "content": prompt})
+    """Client for OpenRouter API."""
+    
+    def __init__(self, api_key: Optional[str] = None):
+        """Initialize OpenRouter API client."""
+        self.api_key = api_key or settings.OPENROUTER_API_KEY
+        if not self.api_key:
+            raise OpenRouterAPIError("OpenRouter API key not found in settings")
         
-        # Try with primary model first
-        data = {
-            "model": model or self.model,
-            "messages": messages,
-            "temperature": temperature,
-            "max_tokens": max_tokens or 2000,
-            "response_format": {"type": "json_object"}
+        self.base_url = "https://openrouter.ai/api/v1"
+        self.client = httpx.Client(timeout=120.0)
+        self.headers = {
+            "Authorization": f"Bearer {self.api_key}",
+            "HTTP-Referer": "https://github.com/sage-ai/sage",
+            "X-Title": "Sage AI"
         }
+    
+    def _select_model(self, task_type: str, fallback_model: Optional[str] = None) -> Optional[str]:
+        """Select appropriate model based on task type."""
+        logger.debug(f"Task type: {task_type}, Selected model: {fallback_model}")
         
-        retries = 0
-        current_delay = self.INITIAL_RETRY_DELAY
+        if fallback_model:
+            return fallback_model
         
-        while retries <= self.MAX_RETRIES:
+        task_models = OPENROUTER_MODELS.get(task_type, [])
+        return task_models[0] if task_models else None
+    
+    def complete(
+        self,
+        messages: List[Dict[str, str]],
+        task_type: str,
+        temperature: float = 0.7,
+        max_tokens: int = 1024,
+        fallback_model: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """Complete a chat conversation."""
+        model = self._select_model(task_type, fallback_model)
+        if not model:
+            raise OpenRouterAPIError(f"No model found for task type: {task_type}")
+        
+        try:
+            response = self.client.post(
+                f"{self.base_url}/chat/completions",
+                headers=self.headers,
+                json={
+                    "model": model,
+                    "messages": messages,
+                    "temperature": temperature,
+                    "max_tokens": max_tokens
+                }
+            )
+            response.raise_for_status()
+            
+            response_data = response.json()
+            logger.info(f"Response data: {json.dumps(response_data, indent=2)}")
+            
+            content = response_data["choices"][0]["message"]["content"]
+            logger.info(f"Raw content: {repr(content)}")
+            
             try:
-                await self._wait_for_rate_limit()
-                
-                timeout = ClientTimeout(total=self.TIMEOUT)
-                async with ClientSession(timeout=timeout) as session:
-                    async with session.post(
-                        self.BASE_URL,
-                        headers=self.headers,
-                        json=data,
-                        raise_for_status=True
-                    ) as response:
-                        response_data = await response.json()
-                        self.logger.info(f"Response data: {json.dumps(response_data, indent=2)}")
-                        
-                        # Check for blocklist event
-                        if 'choices' in response_data and response_data['choices']:
-                            choice = response_data['choices'][0]
-                            if choice.get('finish_reason') == 'BLOCKLIST':
-                                self.logger.warning("=== BLOCKLIST EVENT DETECTED ===")
-                                self.logger.warning(f"Prompt that triggered blocklist: {prompt}")
-                                self.logger.warning(f"Truncated response: {choice.get('message', {}).get('content', '')}")
-                                self.logger.warning("================================")
-                                
-                                # Try with fallback model
-                                self.logger.info(f"Retrying with fallback model: {OPENROUTER_MODELS['fallback']}")
-                                fallback_data = {
-                                    "model": OPENROUTER_MODELS['fallback'],
-                                    "messages": messages,
-                                    "temperature": temperature,
-                                    "max_tokens": max_tokens or 2000,
-                                    "response_format": {"type": "json_object"}
-                                }
-                                
-                                # Make request with fallback model
-                                async with session.post(
-                                    self.BASE_URL,
-                                    headers=self.headers,
-                                    json=fallback_data,
-                                    raise_for_status=True
-                                ) as fallback_response:
-                                    fallback_data = await fallback_response.json()
-                                    self.logger.info(f"Fallback model response: {json.dumps(fallback_data, indent=2)}")
-                                    
-                                    if 'choices' in fallback_data and fallback_data['choices']:
-                                        fallback_content = fallback_data['choices'][0].get('message', {}).get('content', '')
-                                        self.logger.info(f"Fallback raw content: {repr(fallback_content)}")
-                                        
-                                        # Process fallback response
-                                        try:
-                                            if fallback_content.startswith('```json'):
-                                                fallback_content = fallback_content[7:]
-                                            if fallback_content.endswith('```'):
-                                                fallback_content = fallback_content[:-3]
-                                            fallback_content = fallback_content.strip()
-                                            return json.loads(fallback_content)
-                                        except json.JSONDecodeError:
-                                            cleaned = self.clean_response(fallback_content)
-                                            if isinstance(cleaned, dict):
-                                                return cleaned
-                                            return fallback_content if fallback_content else "{}"
-                                    return "{}"
-                            
-                            # Process normal response (no blocklist)
-                            content = choice.get('message', {}).get('content', '')
-                            self.logger.info(f"Raw content: {repr(content)}")
-                            
-                            try:
-                                if content.startswith('```json'):
-                                    content = content[7:]
-                                if content.endswith('```'):
-                                    content = content[:-3]
-                                content = content.strip()
-                                return json.loads(content)
-                            except json.JSONDecodeError:
-                                cleaned = self.clean_response(content)
-                                if isinstance(cleaned, dict):
-                                    return cleaned
-                                return content if content else "{}"
-                        
-                        return "{}"
-                        
-            except Exception as e:
-                self.logger.error(f"Error during API request: {str(e)}")
-                if retries == self.MAX_RETRIES:
-                    raise
-                
-                retries += 1
-                await asyncio.sleep(current_delay)
-                current_delay = min(current_delay * 2, self.MAX_RETRY_DELAY)
-        
-        return "{}"
+                return json.loads(content)
+            except json.JSONDecodeError as e:
+                logger.warning(f"Failed to parse response as JSON: {str(e)}")
+                return {"content": content}
+            
+        except httpx.HTTPError as e:
+            if "blocklist" in str(e).lower() and not fallback_model:
+                # Try fallback model
+                fallback = "nvidia/llama-3.1-nemotron-70b-instruct"
+                logger.warning(f"Model {model} blocked, trying fallback model: {fallback}")
+                return self.complete(
+                    messages=messages,
+                    task_type=task_type,
+                    temperature=temperature,
+                    max_tokens=max_tokens,
+                    fallback_model=fallback
+                )
+            raise OpenRouterAPIError(f"HTTP error: {str(e)}") from e
+        except Exception as e:
+            raise OpenRouterAPIError(f"Unexpected error: {str(e)}") from e
