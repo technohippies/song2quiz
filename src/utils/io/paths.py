@@ -67,3 +67,51 @@ def ensure_song_dir(base_path: Union[str, Path], song_id: int) -> Path:
     song_dir = get_song_dir(base_path, song_id)
     song_dir.mkdir(parents=True, exist_ok=True)
     return song_dir
+
+def get_relative_path(path: Union[str, Path], base_path: Union[str, Path]) -> str:
+    """
+    Get a path relative to the base project directory.
+    
+    Args:
+        path: Path to convert to relative
+        base_path: Base project directory
+        
+    Returns:
+        Relative path as string
+    """
+    return str(Path(path).relative_to(Path(base_path)))
+
+def get_absolute_path(relative_path: str, base_path: Union[str, Path]) -> Path:
+    """
+    Convert a relative path to absolute using the base project directory.
+    
+    Args:
+        relative_path: Relative path to convert
+        base_path: Base project directory
+        
+    Returns:
+        Absolute path
+    """
+    return Path(base_path) / relative_path
+
+def update_song_paths(song_data: dict, base_path: Union[str, Path]) -> dict:
+    """
+    Update song data to use relative paths.
+    
+    Args:
+        song_data: Dictionary containing song metadata
+        base_path: Base project directory
+        
+    Returns:
+        Updated song data with relative paths
+    """
+    base = Path(base_path)
+    updated = song_data.copy()
+    
+    # Convert absolute paths to relative
+    path_fields = ['song_path', 'annotations_path', 'lyrics_path']
+    for field in path_fields:
+        if field in updated and updated[field]:
+            updated[field] = get_relative_path(updated[field], base)
+            
+    return updated

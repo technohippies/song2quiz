@@ -2,8 +2,9 @@
 import json
 import logging
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple
 from prefect import task
+from datetime import datetime
 
 from src.utils.io.paths import get_song_dir
 
@@ -15,10 +16,13 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-def find_matching_annotation(text: str, annotations: List[Dict]) -> Optional[Dict]:
-    """Find the annotation that best matches the given text."""
+def find_matching_annotation(text: str, annotations: List[Dict]) -> Tuple[Optional[Dict], Optional[str]]:
+    """
+    Find the annotation that best matches the given text.
+    Returns (annotation, match_type) where match_type is 'exact', 'fragment', or 'line'
+    """
     if not text or text.strip() in ['[', ']'] or text.strip().isdigit():
-        return None
+        return None, None
         
     text = text.lower().strip()
     
@@ -27,7 +31,7 @@ def find_matching_annotation(text: str, annotations: List[Dict]) -> Optional[Dic
         fragment = ann['fragment'].lower().strip()
         if fragment == text:
             logger.debug(f"Found exact match: '{text[:30]}...'")
-            return ann
+            return ann, 'exact'
             
     # Try matching fragment within line
     for ann in annotations:
@@ -35,7 +39,7 @@ def find_matching_annotation(text: str, annotations: List[Dict]) -> Optional[Dic
         # Skip very short fragments and empty fragments
         if len(fragment) > 3 and fragment in text:
             logger.debug(f"Found fragment '{fragment[:30]}...' in line '{text[:30]}...'")
-            return ann
+            return ann, 'fragment'
             
     # Try matching line within fragment
     for ann in annotations:
@@ -43,10 +47,51 @@ def find_matching_annotation(text: str, annotations: List[Dict]) -> Optional[Dic
         # Skip very short lines to avoid false matches
         if len(text) > 3 and text in fragment:
             logger.debug(f"Found line '{text[:30]}...' in fragment '{fragment[:30]}...'")
-            return ann
+            return ann, 'line'
             
     logger.debug(f"No match found for '{text[:30]}...'")
-    return None
+    return None, None
+
+def update_song_processing_metadata(song_id: int, base_path: Path, processing_data: Dict) -> bool:
+    """
+    Update the processing metadata for a song in songs.json.
+    
+    Args:
+        song_id: The ID of the song to update
+        base_path: Base project directory
+        processing_data: Dictionary containing processing metadata
+        
+    Returns:
+        True if successful, False otherwise
+    """
+    try:
+        from src.utils.io.paths import get_songs_catalog_path
+        songs_path = get_songs_catalog_path(base_path)
+        
+        # Read current songs.json
+        with open(songs_path) as f:
+            songs = json.load(f)
+            
+        # Find and update the target song
+        for song in songs:
+            if song['id'] == song_id:
+                # Initialize processing field if it doesn't exist
+                if 'processing' not in song:
+                    song['processing'] = {}
+                
+                # Update with new processing data
+                song['processing'].update(processing_data)
+                break
+        
+        # Write back to songs.json
+        with open(songs_path, 'w', encoding='utf-8') as f:
+            json.dump(songs, f, ensure_ascii=False, indent=2)
+            
+        return True
+        
+    except Exception as e:
+        logger.error(f"Error updating song processing metadata: {str(e)}")
+        return False
 
 @task(name="match_lyrics_annotations")
 def match_lyrics_with_annotations(song_path: Path) -> bool:
@@ -62,7 +107,6 @@ def match_lyrics_with_annotations(song_path: Path) -> bool:
             
         with open(lyrics_path) as f:
             lyrics_data = json.load(f)
-        logger.info(f"Loaded {len(lyrics_data.get('timestamped_lines', []))} lyrics lines")
             
         # Load cleaned annotations
         annotations_path = song_path / "annotations_cleaned.json"
@@ -72,27 +116,32 @@ def match_lyrics_with_annotations(song_path: Path) -> bool:
             
         with open(annotations_path) as f:
             annotations = json.load(f)
-        logger.info(f"Loaded {len(annotations)} annotations")
             
-        # Match annotations to timestamped lyrics lines
+        # Track matches by type
+        matches = {
+            "total": 0,
+            "by_type": {
+                "exact": 0,
+                "fragment": 0,
+                "line": 0
+            }
+        }
+        
+        # Track which annotations have been matched
+        matched_annotation_ids = set()
         lyrics_with_annotations = []
-        matches_found = 0
-        exact_matches = 0
-        fragment_matches = 0
-        line_matches = 0
         
         for line in lyrics_data.get('timestamped_lines', []):
             line_text = line['text'].strip()
-            annotation = find_matching_annotation(line_text, annotations)
+            annotation, match_type = find_matching_annotation(line_text, annotations)
             
             if annotation:
-                matches_found += 1
-                if annotation['fragment'].lower().strip() == line_text.lower().strip():
-                    exact_matches += 1
-                elif annotation['fragment'].lower().strip() in line_text.lower():
-                    fragment_matches += 1
-                else:
-                    line_matches += 1
+                ann_id = annotation['id']
+                if ann_id not in matched_annotation_ids:
+                    matched_annotation_ids.add(ann_id)
+                    matches['total'] += 1
+                    if match_type:
+                        matches['by_type'][match_type] += 1
             
             annotated_line = {
                 "timestamp": line['timestamp'],
@@ -104,22 +153,49 @@ def match_lyrics_with_annotations(song_path: Path) -> bool:
             lyrics_with_annotations.append(annotated_line)
             
         logger.info(f"Match summary:")
-        logger.info(f"- Total matches: {matches_found}/{len(lyrics_with_annotations)} lines")
-        logger.info(f"- Exact matches: {exact_matches}")
-        logger.info(f"- Fragment in line matches: {fragment_matches}")
-        logger.info(f"- Line in fragment matches: {line_matches}")
+        logger.info(f"- Total annotations: {len(annotations)}")
+        logger.info(f"- Total matches: {matches['total']}")
+        logger.info(f"- By type:")
+        logger.info(f"  - Exact: {matches['by_type']['exact']}")
+        logger.info(f"  - Fragment in line: {matches['by_type']['fragment']}")
+        logger.info(f"  - Line in fragment: {matches['by_type']['line']}")
         
         # Save matched lyrics and annotations
         output = {
-            "source": lyrics_data.get('source'),
-            "match_score": lyrics_data.get('match_score'),
+            "lyrics_source": lyrics_data.get('source'),
+            "annotations_source": "genius",
             "has_timestamps": True,
+            "stats": {
+                "total_lyrics_lines": len(lyrics_data.get('timestamped_lines', [])),
+                "total_annotations": len(annotations),
+                "matches": matches
+            },
             "lyrics": lyrics_with_annotations
         }
         
         output_path = song_path / "lyrics_with_annotations.json"
         with open(output_path, 'w', encoding='utf-8') as f:
             json.dump(output, f, ensure_ascii=False, indent=2)
+            
+        # Update processing metadata in songs.json
+        song_id = int(song_path.name)  # Song ID is the directory name
+        processing_data = {
+            "lyrics": {
+                "source": lyrics_data.get('source'),
+                "has_timestamps": True,
+                "total_lines": len(lyrics_data.get('timestamped_lines', [])),
+                "processed_at": datetime.now().isoformat()
+            },
+            "annotations": {
+                "source": "genius",
+                "total_annotations": len(annotations),
+                "matches": matches,
+                "processed_at": datetime.now().isoformat()
+            }
+        }
+        
+        if not update_song_processing_metadata(song_id, song_path.parent.parent, processing_data):
+            logger.warning("Failed to update processing metadata in songs.json")
             
         logger.info(f"Successfully saved matches to {output_path}")
         return True

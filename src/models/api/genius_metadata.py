@@ -13,6 +13,7 @@ class Artist:
     image_url: Optional[str] = None
     is_verified: bool = False
     is_meme_verified: bool = False
+    iq: Optional[int] = None  # Some artists have an IQ field
 
 @dataclass
 class Album:
