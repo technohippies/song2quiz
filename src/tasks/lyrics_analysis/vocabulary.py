@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
       retries=3,
       retry_delay_seconds=2,
       tags=["api"])
-async def analyze_fragment(fragment: str, index: int, total: int) -> Dict[str, Any]:
+async def analyze_fragment(fragment: Dict[str, str], index: int, total: int) -> Dict[str, Any]:
     """Analyze a single fragment."""
     log = get_run_logger()
     try:
@@ -25,11 +25,15 @@ async def analyze_fragment(fragment: str, index: int, total: int) -> Dict[str, A
             for ex in EXAMPLES[:2]  # Use first 2 examples
         ])
         
+        annotation_text = ""
+        if fragment["annotation"]:
+            annotation_text = f"\n\nHere's annotations from Genius.com about this line of lyrics: {fragment['annotation']}"
+        
         prompt = f"""Here are some examples:
 
 {examples_text}
 
-Now analyze this lyric: {fragment}"""
+Now analyze this lyric: {fragment['text']}{annotation_text}"""
         
         log.info(f"Processing fragment {index}/{total}")
         
@@ -100,7 +104,7 @@ Now analyze this lyric: {fragment}"""
         terms = len(valid_terms)
         log.info(f"✓ Fragment {index}/{total} - found {terms} valid terms")
         return {
-            "original": fragment,
+            "original": fragment['text'],
             "vocabulary": valid_terms
         }
             
@@ -113,13 +117,13 @@ Now analyze this lyric: {fragment}"""
       retries=2,
       retry_delay_seconds=5,
       tags=["batch"])
-async def process_batch(fragments: List[str], start_index: int, total: int) -> List[Dict[str, Any]]:
+async def process_batch(fragments: List[Dict[str, str]], start_index: int, total: int) -> List[Dict[str, Any]]:
     """Process a batch of fragments concurrently."""
     log = get_run_logger()
     
     # Filter out invalid fragments
     valid_fragments = [(i+start_index, f) for i, f in enumerate(fragments, 1) 
-                      if f and isinstance(f, str)]
+                      if f and isinstance(f, dict) and "text" in f]
     
     if not valid_fragments:
         return []
@@ -172,12 +176,16 @@ async def analyze_song_vocabulary(song_path: str) -> bool:
         log.info(f"Loaded lyrics data from {lyrics_file}")
             
         # Extract fragments from lyrics_with_annotations.json format
-        fragments: List[str] = []
+        fragments: List[Dict[str, str]] = []
         if isinstance(lyrics_data, dict) and "lyrics" in lyrics_data:
             for line in lyrics_data["lyrics"]:
                 if isinstance(line, dict) and "text" in line:
-                    fragments.append(line["text"])
-                    log.debug(f"Added fragment: {line['text']}")
+                    fragment = {
+                        "text": line["text"],
+                        "annotation": line.get("annotation", "")  # Get annotation if it exists
+                    }
+                    fragments.append(fragment)
+                    log.debug(f"Added fragment: {fragment['text']}")
         else:
             log.error(f"❌ Invalid lyrics data format: {type(lyrics_data)}")
             return False

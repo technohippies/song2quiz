@@ -26,6 +26,18 @@ SYSTEM_PROMPT = """You are an expert linguist specializing in vocabulary analysi
    - "portmanteau" - for a blended word (e.g., "brunch")
    - "neologism" - for a new word (e.g., "staycation")
 
+6. For each term, include content warnings when applicable:
+   - "content_warnings": [] - List of applicable warnings:
+     - "None" - No content warnings needed
+     - "Mild Language" - Minor profanity or crude language
+     - "Strong Language" - Major profanity
+     - "Explicit Language" - Very strong or graphic language
+     - "Slur" - Contains slurs or highly offensive terms
+     - "Hate Speech" - Contains discriminatory language
+     - "Sexual Content" - Contains sexual references
+     - "Violence" - Contains violent references
+     - "Substance Use" - References to drugs/alcohol
+
 The response must be this exact JSON structure with no wrapping:
 {
   "vocabulary": [
@@ -38,7 +50,8 @@ The response must be this exact JSON structure with no wrapping:
           "definition": "clear, concise definition",
           "usage_notes": "helpful context about usage",
           "variants": ["list", "of", "variants"],
-          "domain": "optional category/context" 
+          "domain": "optional category/context",
+          "content_warnings": ["list", "of", "applicable", "warnings"]
         }
       ]
     }

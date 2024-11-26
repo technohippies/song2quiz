@@ -1,28 +1,29 @@
 """Script to ingest a song into the system."""
-import argparse
 from pathlib import Path
+import click
 from src.flows.ingestion.subflows import song_ingestion_flow
 
-def main():
-    parser = argparse.ArgumentParser(description="Ingest a song into the system")
-    parser.add_argument("--artist", required=True, help="Artist name")
-    parser.add_argument("--song", required=True, help="Song title")
-    parser.add_argument("--base-path", default=str(Path(__file__).parent.parent.parent),
-                       help="Base path for data storage")
-    
-    args = parser.parse_args()
-    
-    print(f"Ingesting {args.song} by {args.artist}...")
+@click.command()
+@click.option("--artist", required=True, help="Artist name")
+@click.option("--song", required=True, help="Song title")
+@click.option("--data-dir", 
+              default=str(Path(__file__).parent.parent.parent),
+              help="Base path for data storage",
+              type=click.Path(exists=True, file_okay=False, dir_okay=True))
+def main(artist: str, song: str, data_dir: str):
+    """Ingest a song into the system."""
+    print(f"Ingesting {song} by {artist}...")
     results = song_ingestion_flow(
-        song_name=args.song,
-        artist_name=args.artist,
-        base_path=args.base_path
+        song_name=song,
+        artist_name=artist,
+        base_path=data_dir
     )
     
     if results.get("song_path"):
         print(f"Successfully ingested song to {results['song_path']}")
     else:
         print("Failed to ingest song")
+        raise click.ClickException("Failed to ingest song")
 
 if __name__ == "__main__":
     main()
