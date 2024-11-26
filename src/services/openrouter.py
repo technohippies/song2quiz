@@ -71,6 +71,73 @@ class OpenRouterClient:
             logger.error(f"Error cleaning response content: {str(e)}")
             raise OpenRouterAPIError(f"Failed to clean response: {str(e)}") from e
     
+    async def chat_completion(
+        self,
+        messages: list,
+        temperature: float = 0.7,
+        max_tokens: Optional[int] = None,
+        fallback_model: Optional[str] = None
+    ) -> str:
+        """Make a chat completion request."""
+        try:
+            model = self._select_model(fallback_model)
+            
+            data = {
+                "model": model,
+                "messages": messages,
+                "temperature": temperature
+            }
+            if max_tokens:
+                data["max_tokens"] = max_tokens
+                
+            response = self.client.post(
+                f"{self.base_url}/chat/completions",
+                headers=self.headers,
+                json=data
+            )
+            
+            if response.status_code != 200:
+                error_msg = f"API request failed with status {response.status_code}"
+                if not fallback_model and "google/gemini" in model:
+                    # Try fallback to Nemotron if Gemini fails
+                    logger.warning(f"{error_msg}, falling back to Nemotron")
+                    return await self.chat_completion(
+                        messages=messages,
+                        temperature=temperature,
+                        max_tokens=max_tokens,
+                        fallback_model=OPENROUTER_MODELS["fallback"][0]
+                    )
+                raise OpenRouterAPIError(error_msg)
+                
+            try:
+                result = response.json()
+                content = result["choices"][0]["message"]["content"]
+                return content.strip()
+                
+            except (json.JSONDecodeError, KeyError) as e:
+                if not fallback_model and "google/gemini" in model:
+                    # Try fallback to Nemotron for parsing errors
+                    logger.warning(f"Failed to parse response, falling back to Nemotron: {str(e)}")
+                    return await self.chat_completion(
+                        messages=messages,
+                        temperature=temperature,
+                        max_tokens=max_tokens,
+                        fallback_model=OPENROUTER_MODELS["fallback"][0]
+                    )
+                raise OpenRouterAPIError(f"Failed to parse API response: {str(e)}")
+                
+        except Exception as e:
+            if not fallback_model and "google/gemini" in model:
+                # Try fallback to Nemotron for any other errors
+                logger.warning(f"Request failed, falling back to Nemotron: {str(e)}")
+                return await self.chat_completion(
+                    messages=messages,
+                    temperature=temperature,
+                    max_tokens=max_tokens,
+                    fallback_model=OPENROUTER_MODELS["fallback"][0]
+                )
+            raise OpenRouterAPIError(f"Request failed: {str(e)}")
+    
     async def complete(
         self,
         prompt: str,
