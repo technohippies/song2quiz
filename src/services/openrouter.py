@@ -1,6 +1,7 @@
 """Client for making requests to OpenRouter API with configurable models"""
 import json
 import logging
+import sys
 import time
 from typing import Optional, Dict, Any
 import httpx
@@ -8,7 +9,15 @@ from src.utils.settings import settings
 from src.utils.cleaning.text import extract_and_clean_json
 from src.constants.api import OPENROUTER_MODELS
 
+# FORCE LOGS TO SHOW
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+handler = logging.StreamHandler(sys.stdout)
+handler.setLevel(logging.INFO)
+formatter = logging.Formatter('%(asctime)s | %(levelname)s | %(message)s')
+handler.setFormatter(formatter)
+logger.addHandler(handler)
+logger.propagate = False  # Don't double log
 
 class OpenRouterAPIError(Exception):
     """Custom exception for OpenRouter API errors."""

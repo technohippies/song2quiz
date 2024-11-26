@@ -99,7 +99,10 @@ Now analyze this lyric: {fragment}"""
             
         terms = len(valid_terms)
         log.info(f"✓ Fragment {index}/{total} - found {terms} valid terms")
-        return {"vocabulary": valid_terms}
+        return {
+            "original": fragment,
+            "vocabulary": valid_terms
+        }
             
     except Exception as e:
         log.error(f"❌ Error in fragment {index}/{total}: {str(e)}")
@@ -210,14 +213,26 @@ async def analyze_song_vocabulary(song_path: str) -> bool:
         for result in all_results:
             if result and isinstance(result, dict) and "vocabulary" in result:
                 terms = result["vocabulary"]
-                for term in terms:
-                    # Only add unique terms
-                    term_key = (term["term"].lower(), term["vocabulary_type"])
-                    if term_key not in seen_terms:
-                        seen_terms.add(term_key)
-                        total_terms += 1
-                        all_vocabulary.append(term)
-                        log.info(f"Found unique term: {term['term']} ({term['vocabulary_type']})")
+                original = result.get("original", "")
+                
+                # Create an entry for this line if it has vocabulary terms
+                if terms:
+                    line_entry = {
+                        "original": original,
+                        "vocabulary": []
+                    }
+                    
+                    for term in terms:
+                        # Only add unique terms
+                        term_key = (term["term"].lower(), term["vocabulary_type"])
+                        if term_key not in seen_terms:
+                            seen_terms.add(term_key)
+                            total_terms += 1
+                            line_entry["vocabulary"].append(term)
+                            log.info(f"Found unique term: {term['term']} ({term['vocabulary_type']})")
+                    
+                    if line_entry["vocabulary"]:  # Only add if we found terms
+                        all_vocabulary.append(line_entry)
         
         # Save results
         output_file = Path(song_path) / "vocabulary_analysis.json"
