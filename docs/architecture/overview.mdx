@@ -1,0 +1,80 @@
+# Architecture Overview
+
+Song2Quiz is organized into several key components, each with a specific responsibility in the exercise generation pipeline.
+
+## Project Structure
+
+```
+song2quiz2/
+├── src/          # Source code
+├── tests/        # Test suite
+├── data/         # Data storage
+├── docs/         # Documentation
+└── scripts/      # Development scripts
+```
+
+## Core Components
+
+### Flow Orchestration (`src/flows/`)
+
+Prefect workflow definitions that orchestrate the various tasks:
+
+- `exercises/` - Exercise generation workflows
+- `ingestion/` - Song data fetching and storage
+- `preprocessing/` - Data cleaning and preparation
+
+### Data Models (`src/models/`)
+
+Type definitions and schema validation:
+
+- `api/` - External API response models
+- `exercises/` - Exercise type definitions
+- `lyrics_analysis/` - Lyrics processing models
+
+### External Services (`src/services/`)
+
+API clients and external integrations:
+
+- `genius.py` - Genius API client
+- `lrclib.py` - LRCLib API client
+- `openrouter.py` - OpenRouter API client
+
+### Core Logic (`src/tasks/`)
+
+Business logic implementations:
+
+- `exercises/` - Exercise generation algorithms
+- `lyrics_analysis/` - Lyrics processing logic
+- `preprocessing/` - Data cleaning implementations
+
+### Utilities (`src/utils/`)
+
+Shared helper functions:
+
+- `cleaning/` - Text cleaning utilities
+- `io/` - File and path operations
+
+### Test Suite (`tests/`)
+
+Mirrors the `src` directory structure:
+
+- `flows/` - Flow integration tests
+- `scripts/` - CLI command tests
+- `tasks/` - Unit tests for core logic
+
+## Data Flow
+
+1. **Ingestion**
+   - CLI command triggers ingestion flow
+   - Genius API client fetches data
+   - Raw data stored in song directory
+
+2. **Preprocessing**
+   - Clean and normalize text
+   - Process annotations
+   - Align lyrics with annotations
+
+3. **Exercise Generation**
+   - Analyze processed data
+   - Generate exercise variants
+   - Format for presentation

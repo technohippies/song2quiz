@@ -1,0 +1,85 @@
+## Prerequisites
+
+- Python 3.12+
+- [uv](https://github.com/astral-sh/uv) (recommended) or pip
+- Genius API key 
+- OpenRouter API key 
+
+## Setup
+
+1. Clone the repository:
+```bash
+git clone https://github.com/technohippies/song2quiz2.git
+cd song2quiz2
+```
+
+2. Create and activate virtual environment:
+```bash
+# Using uv (recommended)
+uv venv
+source .venv/bin/activate  # Mac or Linux
+# or
+.venv\Scripts\activate     # Windows
+
+# Or using traditional venv
+python -m venv .venv
+source .venv/bin/activate  # Mac or Linux
+# or
+.venv\Scripts\activate     # Windows
+```
+
+3. Install dependencies:
+```bash
+# Using uv (recommended)
+uv pip install -r requirements.txt
+
+# Or using pip
+pip install -r requirements.txt
+```
+
+4. Create a `.env` file in the project root:
+```bash
+touch .env
+```
+
+5. Add your API keys:
+```env
+GENIUS_ACCESS_TOKEN=your_genius_token_here
+OPENROUTER_API_KEY=your_openrouter_key_here
+```
+
+### Getting API Keys
+
+#### Genius API
+1. Go to [Genius API Clients](https://genius.com/api-clients)
+2. Sign in or create an account
+3. Create a new API client
+4. Copy the access token
+
+#### OpenRouter
+1. Visit [OpenRouter](https://openrouter.ai/)
+2. Create an account
+3. Navigate to API Keys
+4. Create a new key
+
+## Start Prefect Server
+
+Song2Quiz uses [Prefect](https://www.prefect.io/) for workflow orchestration. Start the Prefect server:
+
+```bash
+# Start the Prefect server
+prefect server start
+```
+The Prefect UI will be available at [http://127.0.0.1:4200](http://127.0.0.1:4200)
+
+
+## Test
+
+```bash
+pytest
+```
+
+## Ingest a song
+```
+python -m src.scripts.ingest_song --song "Jesus Is King" --artist "Kanye West"
+```

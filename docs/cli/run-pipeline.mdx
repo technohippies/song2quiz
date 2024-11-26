@@ -1,0 +1,88 @@
+The Song2Quiz pipeline processes songs through three main stages to generate educational content:
+
+1. **Ingestion**: Fetch lyrics and metadata from Genius and LRCLib
+2. **Preprocessing**: Analyze lyrics structure, themes, and musical elements
+3. **Quiz Generation**: Create educational exercises based on the analysis
+
+## Quick Start
+
+Process a song through the entire pipeline:
+```bash
+# Run the full pipeline
+python -m src.scripts.run_pipeline --song "Jesus Is King" --artist "Kanye West"
+
+# Run specific stages only
+python -m src.scripts.run_pipeline --song "Jesus Is King" --artist "Kanye West" --steps ingest
+python -m src.scripts.run_pipeline --song "Jesus Is King" --artist "Kanye West" --steps preprocess
+```
+
+## Pipeline Options
+
+```bash
+python -m src.scripts.run_pipeline [OPTIONS]
+
+Options:
+  --song TEXT, -s TEXT    Song title [required]
+  --artist TEXT, -a TEXT  Artist name [required]
+  --data-dir TEXT, -d TEXT Base directory for data storage
+  --steps TEXT, -t TEXT   Pipeline steps to run [ingest|preprocess|all]
+  --help                 Show this message and exit
+```
+
+## Pipeline Stages
+
+### 1. Ingestion
+Fetches raw song data:
+- Lyrics and annotations from Genius
+- Timestamped lyrics from LRCLib
+- Song metadata and information
+
+[Learn more about ingestion →](/cli/ingest)
+
+### 2. Preprocessing
+Analyzes the song content:
+- Lyrics structure analysis
+- Musical element detection
+- Theme and topic extraction
+
+[Learn more about preprocessing →](/cli/preprocess)
+
+### 3. Quiz Generation
+Creates educational content:
+- Question generation
+- Answer creation
+- Quiz formatting
+
+## Monitoring
+
+Track pipeline progress in the Prefect UI:
+1. Open [http://127.0.0.1:4200](http://127.0.0.1:4200)
+2. Navigate to "Flow Runs"
+3. View individual stage progress
+
+## Configuration
+
+Pipeline settings in `.env`:
+```env
+# API Keys
+GENIUS_ACCESS_TOKEN=your_genius_token
+OPENROUTER_API_KEY=your_openrouter_key
+
+# Pipeline Settings
+MAX_CONCURRENT_SONGS=5
+PREPROCESSING_BATCH_SIZE=10
+```
+
+## Error Recovery
+
+The pipeline is designed for resilience:
+- Failed stages can be retried independently
+- Partial results are saved after each stage
+- Progress is tracked in Prefect UI
+
+To retry failed stages:
+```bash
+# Retry specific stages
+python -m src.scripts.run_pipeline --song "Jesus Is King" --artist "Kanye West" --steps ingest
+python -m src.scripts.run_pipeline --song "Jesus Is King" --artist "Kanye West" --steps preprocess
+```

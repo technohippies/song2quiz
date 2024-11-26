@@ -1,0 +1,85 @@
+# Testing
+
+The test suite is organized to mirror the `src` directory structure, making it easy to find and maintain tests for each component.
+
+## Running Tests
+
+```bash
+# Run all tests
+pytest
+
+# Run specific test file
+pytest tests/scripts/test_ingest_song.py
+
+# Run with coverage
+pytest --cov=src
+
+# Run tests matching a pattern
+pytest -k "test_ingest"
+```
+
+## Test Organization
+
+### CLI Tests (`tests/scripts/`)
+
+Tests for command-line interfaces:
+
+- `test_ingest_song.py` - Song ingestion CLI
+- `test_preprocess_song.py` - Preprocessing CLI
+- `test_run_pipeline.py` - Full pipeline CLI
+
+### Flow Tests (`tests/flows/`)
+
+Integration tests for Prefect flows:
+
+- `ingestion/test_subflows.py` - Song ingestion flows
+- `preprocessing/test_subflows.py` - Data preprocessing flows
+
+### Task Tests (`tests/tasks/`)
+
+Unit tests for core business logic:
+
+- `preprocessing/test_match_lyrics_to_annotations.py`
+- `preprocessing/test_text_cleaning.py`
+
+## Test Data
+
+Test data is stored in `tests/fixtures` and includes:
+
+- Sample song metadata
+- Mock API responses
+- Expected processing outputs
+
+## Writing Tests
+
+### Test Structure
+
+```python
+def test_ingest_song_cli_success(tmp_path):
+    """Test successful song ingestion via CLI."""
+    # Arrange
+    song = "Test Song"
+    artist = "Test Artist"
+    
+    # Act
+    result = runner.invoke(ingest_cli, ["--song", song, "--artist", artist])
+    
+    # Assert
+    assert result.exit_code == 0
+```
+
+### Mocking External Services
+
+```python
+@patch("src.services.genius.GeniusClient.get_song_id")
+def test_song_ingestion_flow(mock_get_song_id):
+    """Test song ingestion flow with mocked Genius API."""
+    # Setup mock
+    mock_get_song_id.return_value = "12345"
+    
+    # Run test
+    result = song_ingestion_flow(song="Test", artist="Artist")
+    
+    # Verify
+    assert result["id"] == "12345"
+```

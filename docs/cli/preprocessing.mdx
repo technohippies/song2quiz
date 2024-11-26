@@ -1,0 +1,16 @@
+Matches song lyrics with their corresponding Genius annotations.
+
+```bash
+python -m src.scripts.preprocess_song --song "Jesus Is King" --artist "Kanye West"
+# OR
+python -m src.scripts.preprocess_song --song-id 123
+```
+
+## Process
+
+1. Takes the lyrics from `lyrics.json` and annotations from `annotations_cleaned.json`
+2. Attempts to match lyrics and annotations in three ways:
+   - Exact matches
+   - Finding annotation fragments within lyrics
+   - Finding lyrics within annotation fragments
+3. Outputs matched lyrics and annotations to `lyrics_with_annotations.json`

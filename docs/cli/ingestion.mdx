@@ -1,0 +1,47 @@
+The ingestion stage fetches song data from multiple sources:
+- Lyrics and annotations from Genius
+- Timestamped lyrics from LRCLib
+- Additional metadata from both services
+
+## Usage
+
+```bash
+python -m src.scripts.ingest_song --song "Jesus Is King" --artist "Kanye West"
+```
+
+## Command Options
+
+```bash
+python -m src.scripts.ingest_song [OPTIONS]
+
+Options:
+  --song TEXT, -s TEXT     Song title [required]
+  --artist TEXT, -a TEXT   Artist name [required]
+  --data-dir TEXT, -d TEXT Base directory for data storage
+  --help                  Show this message and exit
+```
+
+## Data Sources
+
+### Genius API
+- Song lyrics and structure
+- Community annotations and explanations
+- Metadata (title, artist, album, release date)
+- Genre and topic information
+
+### LRCLib API
+- Timestamped lyrics (when available)
+- Line-by-line timing information
+- Alternative plain text lyrics
+
+## Output Files
+
+Ingested data is stored in:
+```
+data/songs/{genius_song_id}/
+├── genius_metadata.json  # Song metadata from Genius
+├── genius_lyrics.json    # Lyrics and annotations
+└── lrclib_lyrics.json    # Lyrics from Lriclib, usually with timestamps
+```
+
+The `data/songs.json` file serves as a central index of all ingested songs.

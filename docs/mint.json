@@ -1,0 +1,44 @@
+ {
+  "name": "Song2Quiz",
+  "logo": {
+    "light": "/logo/light.svg",
+    "dark": "/logo/dark.svg"
+  },
+  "favicon": "/favicon.png",
+  "colors": {
+    "primary": "#0D9373",
+    "light": "#07C983",
+    "dark": "#0D9373",
+    "ultraLight": "#7FFFD4",
+    "ultraDark": "#0A7355"
+  },
+  "topbarLinks": [
+    {
+      "name": "GitHub",
+      "url": "https://github.com/codeium/song2quiz"
+    }
+  ],
+  "navigation": [
+    {
+      "group": "Getting Started",
+      "pages": [
+        "introduction",
+        "installation"
+      ]
+    },
+    {
+      "group": "All Steps",
+      "pages": [
+        "cli/run-pipeline"
+      ]
+    },
+    {
+      "group": "Individual Steps",
+      "pages": [
+        "cli/ingestion",
+        "cli/preprocessing",
+        "cli/generation"
+      ]
+    }
+  ]
+}
