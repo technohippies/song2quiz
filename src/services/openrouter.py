@@ -2,11 +2,9 @@
 import json
 import logging
 import sys
-import time
 from typing import Optional, Dict, Any
 import httpx
 from src.utils.settings import settings
-from src.utils.cleaning.text import extract_and_clean_json
 from src.constants.api import OPENROUTER_MODELS
 
 # FORCE LOGS TO SHOW
@@ -152,12 +150,8 @@ class OpenRouterClient:
                     logger.info(json.dumps(result, indent=2))
                     logger.info("=" * 100)
                     
-                    if not isinstance(result, dict) or "vocabulary" not in result:
-                        raise json.JSONDecodeError("Missing vocabulary key", content, 0)
-                    if not isinstance(result["vocabulary"], list):
-                        raise json.JSONDecodeError("vocabulary must be an array", content, 0)
-                    if len(result["vocabulary"]) != 1:
-                        logger.warning(f"⚠️ Expected 1 term but got {len(result['vocabulary'])} terms")
+                    if not isinstance(result, dict):
+                        raise json.JSONDecodeError("Response must be a JSON object", content, 0)
                     return result
                 except json.JSONDecodeError as e:
                     if not fallback_model and "google/gemini" in model:

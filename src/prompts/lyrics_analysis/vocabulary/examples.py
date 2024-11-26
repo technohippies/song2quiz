@@ -1,8 +1,35 @@
-"""Example inputs and outputs for vocabulary analysis."""
+"""Example inputs and outputs for vocabulary analysis.
+
+The examples below demonstrate what terms should and should not be included
+in the vocabulary analysis.
+"""
 
 EXAMPLES = [
     {
-        "input": "I'm finna pull up in that new whip",
+        "input": "That whip is fire, no cap",
+        "output": {
+            "vocabulary": [
+                {
+                    "term": "whip",
+                    "vocabulary_type": "slang",
+                    "definition": "A car or vehicle",
+                    "usage_notes": "Common in hip-hop and urban slang",
+                    "variants": ["whips"],
+                    "domain": "automotive/slang"
+                },
+                {
+                    "term": "cap",
+                    "vocabulary_type": "slang",
+                    "definition": "A lie or to lie",
+                    "usage_notes": "Used in phrases like 'no cap' meaning 'no lie'",
+                    "variants": ["capping", "capped"],
+                    "domain": "general speech"
+                }
+            ]
+        }
+    },
+    {
+        "input": "Finna cop some Yeezys",
         "output": {
             "vocabulary": [
                 {
@@ -10,55 +37,56 @@ EXAMPLES = [
                     "vocabulary_type": "aave",
                     "definition": "Going to; about to",
                     "usage_notes": "Contraction of 'fixing to'",
-                    "variants": ["finna'", "fixing to", "fin to"],
+                    "variants": ["fixing to", "fin to"],
                     "domain": "general speech"
                 },
                 {
-                    "term": "pull up",
-                    "vocabulary_type": "phrasal_verb",
-                    "definition": "To arrive somewhere, typically in a vehicle",
-                    "usage_notes": "Often used to indicate arrival at a location",
-                    "variants": ["pulling up", "pulled up"],
-                    "domain": "general speech"
+                    "term": "cop",
+                    "vocabulary_type": "slang", 
+                    "definition": "To acquire or purchase something",
+                    "usage_notes": "Informal term for buying",
+                    "variants": ["copped", "copping"],
+                    "domain": "commerce"
                 },
                 {
-                    "term": "whip",
-                    "vocabulary_type": "slang",
-                    "definition": "Car, vehicle",
-                    "usage_notes": "Common in hip-hop when referring to vehicles",
-                    "variants": ["whippin'", "whips"],
-                    "domain": "automotive/street"
+                    "term": "Yeezys",
+                    "vocabulary_type": "brand",
+                    "definition": "A line of shoes by Kanye West and Adidas",
+                    "usage_notes": "Popular sneaker brand",
+                    "variants": ["Yeezy"],
+                    "domain": "fashion"
                 }
             ]
         }
     },
     {
-        "input": "Got them J's on with the Chi-town flow",
+        "input": "I don't know what that means",
         "output": {
-            "vocabulary": [
-                {
-                    "term": "J's",
-                    "vocabulary_type": "slang",
-                    "definition": "Jordan brand sneakers",
-                    "usage_notes": "Popular reference to Air Jordan sneakers",
-                    "variants": ["Jordans", "Air Jordans", "Jordan's"],
-                    "domain": "fashion/sneakers"
-                },
-                {
-                    "term": "Chi-town",
-                    "vocabulary_type": "colloquialism",
-                    "definition": "Chicago, Illinois",
-                    "usage_notes": "Common nickname for Chicago",
-                    "variants": ["Chi", "The Chi", "Chitown"],
-                    "domain": "geography/culture"
-                }
-            ]
+            "vocabulary": []  # Skip common contractions like don't, won't, I'm
         }
     },
     {
-        "input": "Yesterday, all my troubles seemed so far away",
+        "input": "The hands is to the ceiling",
         "output": {
-            "vocabulary": []  # Example of standard English with no special terms to analyze
+            "vocabulary": []  # Skip basic nouns like 'hands', 'ceiling' even if used non-standardly
+        }
+    },
+    {
+        "input": "No one knows what it means, but it's provocative",
+        "output": {
+            "vocabulary": []  # Skip standard English words like 'provocative' even if sophisticated
+        }
+    },
+    {
+        "input": "Gets the people going",
+        "output": {
+            "vocabulary": []  # Skip common verb phrases and basic English verbs
+        }
+    },
+    {
+        "input": "I have a feeling about this",
+        "output": {
+            "vocabulary": []  # Skip common emotional/mental state words like 'feeling'
         }
     }
 ]
