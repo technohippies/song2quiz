@@ -36,9 +36,6 @@ class VocabularyEntry(BaseModel):
     term: str
     vocabulary_type: VocabularyType
     definition: str
-    usage_notes: Optional[str] = None
-    variants: Optional[List[str]] = None  # Alternative forms or spellings
-    see_also: Optional[List[str]] = None  # Related terms
-    etymology: Optional[str] = None       # Origin or evolution of the term
-    register: Optional[str] = None        # Level of formality (formal, informal, vulgar)
-    domain: Optional[str] = None          # Field or area of use (music, street, etc.)
+    usage_notes: Optional[str] = None    # Additional context and usage examples
+    variants: Optional[List[str]] = None # Alternative forms, spellings, or closely related terms
+    domain: Optional[str] = None         # Field or area of use (music, street, etc.)

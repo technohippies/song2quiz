@@ -6,6 +6,7 @@ import json
 from typing import Optional, Dict, Any
 import src.flows.ingestion.subflows
 import src.flows.preprocessing.subflows
+import src.flows.generation.main
 from src.utils.io.paths import get_songs_dir
 
 @click.command()
@@ -15,10 +16,14 @@ from src.utils.io.paths import get_songs_dir
               default=str(Path(__file__).parent.parent.parent / "data"),
               help='Base directory for data storage')
 @click.option('--steps', '-t', 
-              type=click.Choice(['ingest', 'preprocess', 'all']), 
+              type=click.Choice(['ingest', 'preprocess', 'generate', 'all']), 
               default='all',
               help='Pipeline steps to run')
-def main(song: str, artist: str, data_dir: str, steps: str) -> int:
+@click.option('--batch-size', '-b', 
+              type=int, 
+              default=5,
+              help='Number of lines to process in parallel during vocabulary analysis')
+def main(song: str, artist: str, data_dir: str, steps: str, batch_size: int) -> int:
     """Run the full lyrics processing pipeline.
     
     Example:
@@ -30,6 +35,7 @@ def main(song: str, artist: str, data_dir: str, steps: str) -> int:
         song_id: Optional[int] = None
         
         if steps in ['ingest', 'all']:
+            print("\n📥 Running ingestion...")
             result = src.flows.ingestion.subflows.song_ingestion_flow(
                 song_name=song,
                 artist_name=artist,
@@ -51,6 +57,7 @@ def main(song: str, artist: str, data_dir: str, steps: str) -> int:
                 return 0
 
         if steps in ['preprocess', 'all']:
+            print("\n🔄 Running preprocessing...")
             # If we're only preprocessing, try to find the song ID from metadata
             if not song_id:
                 # Look through all song directories for matching metadata
@@ -81,6 +88,19 @@ def main(song: str, artist: str, data_dir: str, steps: str) -> int:
             if not success:
                 print("\n❌ Preprocessing failed")
                 return 1
+                
+            if steps == 'preprocess':
+                print("\n✅ Preprocessing completed successfully")
+                return 0
+                
+        if steps in ['generate', 'all']:
+            print("\n🔍 Running vocabulary analysis...")
+            import asyncio
+            asyncio.run(src.flows.generation.main.main(artist=artist, song=song, batch_size=batch_size))
+            
+            if steps == 'generate':
+                print("\n✅ Generation completed successfully")
+                return 0
             
         print("\n✅ Pipeline completed successfully")
         return 0

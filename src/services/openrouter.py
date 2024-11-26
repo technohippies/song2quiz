@@ -82,87 +82,72 @@ class OpenRouterClient:
         self.logger.debug(f"Raw content type: {type(content)}")
         self.logger.debug(f"Raw content: {repr(content)}")
         
-        # Strip whitespace and remove markdown
-        content = content.strip()
-        content = re.sub(r'```(?:json)?\n?(.*?)```', r'\1', content, flags=re.DOTALL)
-        
-        # Find JSON structure and ensure it's complete
-        json_match = re.search(r'(\{[\s\S]*?\}|\[[\s\S]*?\])', content)
-        if json_match:
-            json_str = json_match.group(0)
+        def clean_json_str(json_str: str) -> str:
+            """Helper function to clean JSON string"""
+            # Normalize quotes - replace escaped single quotes with regular single quotes
+            json_str = json_str.replace("\\'", "'")
             
-            # Count braces to ensure complete JSON
-            open_braces = json_str.count('{')
-            close_braces = json_str.count('}')
-            open_brackets = json_str.count('[')
-            close_brackets = json_str.count(']')
+            # Handle nested quotes in usage_notes and other fields
+            # Replace any remaining escaped double quotes with single quotes
+            json_str = json_str.replace('\\"', "'")
             
-            if open_braces != close_braces or open_brackets != close_brackets:
-                self.logger.warning("Incomplete JSON structure detected")
-                self.logger.warning(f"Open braces: {open_braces}, Close braces: {close_braces}")
-                self.logger.warning(f"Open brackets: {open_brackets}, Close brackets: {close_brackets}")
+            # Remove any trailing commas before closing brackets
+            json_str = re.sub(r',(\s*[}\]])', r'\1', json_str)
+            
+            # Fix any remaining unescaped quotes inside strings
+            def fix_nested_quotes(match):
+                # Replace unescaped double quotes in the string with single quotes
+                string_content = match.group(1)
+                return '"' + string_content.replace('"', "'") + '"'
                 
-                # Try to find a valid complete subset of the JSON
-                stack = []
-                valid_json = ""
-                for i, char in enumerate(json_str):
-                    if char in '{[':
-                        stack.append(char)
-                        valid_json += char
-                    elif char in '}]':
-                        if not stack:  # Ignore closing without opening
-                            continue
-                        if (char == '}' and stack[-1] == '{') or (char == ']' and stack[-1] == '['):
-                            stack.pop()
-                            valid_json += char
-                            if not stack:  # We found a complete valid JSON structure
-                                break
-                    else:
-                        valid_json += char
-                
-                if not stack:  # We found a complete valid JSON
-                    json_str = valid_json
-                else:  # Add missing closing braces/brackets
-                    while stack:
-                        char = stack.pop()
-                        if char == '{':
-                            json_str += '}'
-                        elif char == '[':
-                            json_str += ']'
+            json_str = re.sub(r'"([^"\\]*(?:\\.[^"\\]*)*)"', fix_nested_quotes, json_str)
             
+            return json_str
+
+        # First try to extract JSON from markdown code blocks
+        json_block_match = re.search(r'```json\s*(.*?)\s*```', content, re.DOTALL)
+        if json_block_match:
             try:
-                # Basic cleanup
-                json_str = re.sub(r'\\([^"\\])', r'\1', json_str)  # Remove invalid escapes
-                json_str = re.sub(r'(?<!\\)"([^"]*?)(?<!\\)"', r'"\1"', json_str)  # Fix quotes
-                json_str = re.sub(r'(\s*)(\w+)(\s*):', r'\1"\2"\3:', json_str)  # Quote property names
-                json_str = re.sub(r',(\s*[}\]])', r'\1', json_str)  # Remove trailing commas
-                
-                self.logger.debug(f"Cleaned JSON string: {repr(json_str)}")
-                parsed = json.loads(json_str)
-                self.logger.debug("Successfully parsed JSON structure")
-                return parsed
+                json_str = clean_json_str(json_block_match.group(1).strip())
+                self.logger.debug(f"Found JSON block: {json_str}")
+                return json.loads(json_str)
             except json.JSONDecodeError as e:
-                self.logger.error(f"JSON parsing failed: {str(e)}")
-                self.logger.error(f"Failed JSON: {repr(json_str)}")
-                
-                # Try one more time with aggressive cleaning
+                self.logger.warning(f"Failed to parse JSON from code block: {str(e)}")
+        
+        # If no JSON block or parsing failed, try to find any JSON structure
+        json_match = re.search(r'(\{[\s\S]*\})', content)
+        if json_match:
+            try:
+                json_str = clean_json_str(json_match.group(0))
+                self.logger.debug(f"Found JSON structure: {json_str}")
+                return json.loads(json_str)
+            except json.JSONDecodeError as e:
+                self.logger.warning(f"Failed to parse JSON structure: {str(e)}")
+                # Try one more time with more aggressive cleaning
                 try:
-                    cleaned = json_str.replace('\t', '    ')  # Replace tabs with spaces
-                    cleaned = re.sub(r',(\s*[}\]])', r'\1', cleaned)  # Remove trailing commas
-                    cleaned = re.sub(r',(\s*$)', '', cleaned)  # Remove trailing commas at end of lines
-                    cleaned = re.sub(r'(?m),(\s*$)', '', cleaned)  # Remove trailing commas at end of lines (multiline)
-                    
-                    self.logger.debug(f"Aggressively cleaned JSON: {repr(cleaned)}")
-                    parsed = json.loads(cleaned)
-                    self.logger.debug("Successfully parsed JSON after aggressive cleaning")
-                    return parsed
-                except json.JSONDecodeError:
-                    self.logger.error("Failed to parse JSON even after aggressive cleaning")
-                    
+                    # Remove any non-JSON characters
+                    json_str = re.sub(r'[^\[\]{}",:\s\w\-\'.]', '', json_str)
+                    # Normalize all quotes to double quotes
+                    json_str = json_str.replace("'", '"')
+                    # Fix double-quoted strings
+                    json_str = re.sub(r'""([^"]*?)""', r'"\1"', json_str)
+                    return json.loads(json_str)
+                except json.JSONDecodeError as e:
+                    self.logger.warning(f"Failed to parse JSON even after aggressive cleaning: {str(e)}")
+        
         self.logger.debug("========== CLEAN RESPONSE END ==========")
         self.logger.info(f"Cleaned content: {repr(content)}")
         
-        # If we couldn't parse JSON, return the cleaned string
+        # If we couldn't parse as JSON, try to extract just the vocabulary array
+        vocab_match = re.search(r'"vocabulary":\s*(\[.*?\])', content, re.DOTALL)
+        if vocab_match:
+            try:
+                vocab_str = clean_json_str(vocab_match.group(1))
+                vocab_list = json.loads(vocab_str)
+                return {"vocabulary": vocab_list}
+            except json.JSONDecodeError:
+                self.logger.warning("Failed to parse vocabulary array")
+        
         return content
 
     async def complete(
@@ -173,17 +158,18 @@ class OpenRouterClient:
         max_tokens: Optional[int] = None,
         model: Optional[str] = None
     ) -> Union[str, Dict[str, Any]]:
-        """Make request to OpenRouter API with retry logic"""
+        """Make request to OpenRouter API with retry logic and fallback for blocklist events"""
         messages = []
         if system_prompt:
             messages.append({"role": "system", "content": system_prompt})
         messages.append({"role": "user", "content": prompt})
         
+        # Try with primary model first
         data = {
             "model": model or self.model,
             "messages": messages,
             "temperature": temperature,
-            "max_tokens": max_tokens or 2000,  # Reduced to avoid truncation
+            "max_tokens": max_tokens or 2000,
             "response_format": {"type": "json_object"}
         }
         
@@ -205,28 +191,43 @@ class OpenRouterClient:
                         response_data = await response.json()
                         self.logger.info(f"Response data: {json.dumps(response_data, indent=2)}")
                         
+                        # Check for blocklist event
                         if 'choices' in response_data and response_data['choices']:
-                            content = response_data['choices'][0].get('message', {}).get('content', '')
-                            self.logger.info(f"Raw content: {repr(content)}")
-                            
-                            # Try to parse as JSON first
-                            try:
-                                if content.startswith('```json'):
-                                    content = content[7:]  # Remove ```json
-                                if content.endswith('```'):
-                                    content = content[:-3]  # Remove ```
-                                content = content.strip()
-                                return json.loads(content)
-                            except json.JSONDecodeError:
-                                # If JSON parsing fails, try cleaning
-                                cleaned = self.clean_response(content)
-                                if isinstance(cleaned, dict):
-                                    return cleaned
+                            choice = response_data['choices'][0]
+                            if choice.get('finish_reason') == 'BLOCKLIST':
+                                self.logger.warning("=== BLOCKLIST EVENT DETECTED ===")
+                                self.logger.warning(f"Prompt that triggered blocklist: {prompt}")
+                                content = choice.get('message', {}).get('content', '')
+                                self.logger.warning(f"Truncated response: {content}")
+                                self.logger.warning("================================")
                                 
-                                # If all else fails, return the raw content
-                                return content if content else "{}"
+                                # Try with fallback model
+                                self.logger.info(f"Retrying with fallback model: {OPENROUTER_MODELS['fallback']}")
+                                data["model"] = OPENROUTER_MODELS['fallback']
+                                
+                                # Make request with fallback model
+                                async with session.post(
+                                    self.BASE_URL,
+                                    headers=self.headers,
+                                    json=data,
+                                    raise_for_status=True
+                                ) as fallback_response:
+                                    fallback_data = await fallback_response.json()
+                                    self.logger.info(f"Fallback model response: {json.dumps(fallback_data, indent=2)}")
+                                    
+                                    if 'choices' in fallback_data and fallback_data['choices']:
+                                        content = fallback_data['choices'][0].get('message', {}).get('content', '')
+                                        self.logger.info(f"Fallback raw content: {repr(content)}")
+                                        return self.clean_response(content)
+                                    
+                                    return "{}"
+                            
+                            # Process normal response (no blocklist)
+                            content = choice.get('message', {}).get('content', '')
+                            self.logger.info(f"Raw content: {repr(content)}")
+                            return self.clean_response(content)
                         
-                        return "{}"  # Return empty JSON object if no content
+                        return "{}"
                         
             except Exception as e:
                 self.logger.error(f"Error during API request: {str(e)}")
@@ -237,7 +238,7 @@ class OpenRouterClient:
                 await asyncio.sleep(current_delay)
                 current_delay = min(current_delay * 2, self.MAX_RETRY_DELAY)
         
-        return "{}"  # Return empty JSON object after all retries fail
+        return "{}"
 
     def _find_complete_json(self, content: str) -> str:
         """Find the last complete JSON object/array in a potentially truncated string"""
