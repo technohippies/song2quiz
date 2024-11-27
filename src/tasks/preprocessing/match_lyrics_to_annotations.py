@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 from prefect import task
 from datetime import datetime
+import hashlib
 
 from src.utils.io.paths import get_song_dir
 
@@ -51,6 +52,11 @@ def find_matching_annotation(text: str, annotations: List[Dict]) -> Tuple[Option
             
     logger.debug(f"No match found for '{text[:30]}...'")
     return None, None
+
+def get_line_id(text: str) -> str:
+    """Generate deterministic ID for a line of text."""
+    # Use SHA-256 to generate a stable hash, taking first 8 chars
+    return hashlib.sha256(text.encode()).hexdigest()[:8]
 
 def update_song_processing_metadata(song_id: int, base_path: Path, processing_data: Dict) -> bool:
     """
@@ -144,6 +150,7 @@ def match_lyrics_with_annotations(song_path: Path) -> bool:
                         matches['by_type'][match_type] += 1
             
             annotated_line = {
+                "id": get_line_id(line_text),  
                 "timestamp": line['timestamp'],
                 "text": line_text,
                 "annotation": annotation['annotation_text'] if annotation else None,

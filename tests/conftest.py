@@ -1,7 +1,13 @@
 import os
+import sys
 import pytest
+from pathlib import Path
 from dotenv import load_dotenv
 from prefect.testing.utilities import prefect_test_harness
+
+# Add src directory to Python path
+src_dir = Path(__file__).resolve().parent.parent / "src"
+sys.path.append(str(src_dir))
 
 # Configure default asyncio settings
 pytest_plugins = ["pytest_asyncio"]

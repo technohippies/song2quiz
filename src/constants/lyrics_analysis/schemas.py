@@ -1,5 +1,5 @@
 """JSON schemas for lyrics analysis validation."""
-from .linguistic import CEFRLevel, GrammaticalTense, SentenceType
+from .linguistic import CEFRLevel, GrammaticalTense, SentenceType, ParentheticalType
 from .rhetorical import RhetoricalDevice, SemanticLayer
 
 # Validation Schema
@@ -14,6 +14,7 @@ ANALYSIS_SCHEMA = {
         "grammar_patterns",
         "semantic_units",
         "is_parenthetical", 
+        "parenthetical_analysis",
     ],
     "properties": {
         "original": {"type": "string"},
@@ -22,6 +23,23 @@ ANALYSIS_SCHEMA = {
         "standardized_american_english_without_parens": {
             "type": "string",
             "description": "Only present when is_parenthetical is true"
+        },
+        "parenthetical_analysis": {
+            "type": "object",
+            "required": ["type", "content", "context"],
+            "properties": {
+                "type": {
+                    "type": "string",
+                    "enum": [ptype.value for ptype in ParentheticalType]
+                },
+                "content": {"type": "string"},
+                "context": {"type": "string"},
+                "related_lyrics": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": "Lines of lyrics that this parenthetical content relates to"
+                }
+            }
         },
         "proper_nouns": {
             "type": "array",

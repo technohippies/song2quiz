@@ -2,8 +2,9 @@
 import json
 import logging
 from pathlib import Path
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 from prefect import task, get_run_logger
+import asyncio
 
 from src.tasks.api.openrouter_tasks import complete_openrouter_prompt
 from src.prompts.lyrics_analysis.vocabulary.system import SYSTEM_PROMPT
@@ -15,103 +16,60 @@ logger = logging.getLogger(__name__)
       retries=3,
       retry_delay_seconds=2,
       tags=["api"])
-async def analyze_fragment(fragment: Dict[str, str], index: int, total: int) -> Dict[str, Any]:
+async def analyze_fragment(fragment: Dict[str, str], index: int, total: int) -> Optional[Dict[str, Any]]:
     """Analyze a single fragment."""
     log = get_run_logger()
     try:
         # Build prompt with examples for few-shot learning
         examples_text = "\n\n".join([
             f"Input: {ex['input']}\nOutput: {json.dumps(ex['output'], indent=2)}"
-            for ex in EXAMPLES[:2]  # Use first 2 examples
+            for ex in EXAMPLES[:2]
         ])
         
         annotation_text = ""
-        if fragment["annotation"]:
+        if fragment.get("annotation"):
             annotation_text = f"\n\nHere's annotations from Genius.com about this line of lyrics: {fragment['annotation']}"
         
         prompt = f"""Here are some examples:
 
 {examples_text}
 
+IMPORTANT: Analyze ALL non-standard vocabulary terms in the line, including slang terms like 'whip', 'cap', and 'fire'.
 Now analyze this lyric: {fragment['text']}{annotation_text}"""
         
         log.info(f"Processing fragment {index}/{total}")
         
-        result = await complete_openrouter_prompt(
+        # Get vocabulary analysis from API
+        api_result = await complete_openrouter_prompt(
             formatted_prompt=prompt,
             task_type="vocabulary",
             system_prompt=SYSTEM_PROMPT,
             temperature=0.1,
-            max_tokens=256
+            max_tokens=512
         )
         
-        # Validate and clean the result
-        if isinstance(result, str):
-            try:
-                result = result.strip('`').strip()
-                if result.startswith('```json'):
-                    result = result[7:]
-                if result.endswith('```'):
-                    result = result[:-3]
-                log.debug(f"Attempting to parse JSON for fragment {index}: {result}")
-                result = json.loads(result)
-            except json.JSONDecodeError as e:
-                log.error(f"❌ Fragment {index}/{total} JSON parsing error: {str(e)}")
-                log.error(f"Raw result that failed parsing: {result}")
-                return {"vocabulary": []}
-                
-        if not isinstance(result, dict):
-            log.error(f"❌ Fragment {index}/{total} returned non-dict result: {type(result)}")
-            return {"vocabulary": []}
+        # Create response with the vocabulary terms
+        if isinstance(api_result, dict) and "vocabulary" in api_result:
+            # Only create response if we have terms
+            if api_result["vocabulary"]:  # Check if vocabulary list is not empty
+                response = {
+                    "vocabulary": [
+                        {
+                            "original": fragment["text"],
+                            "id": fragment["id"],
+                            "timestamp": fragment["timestamp"],
+                            "vocabulary": api_result["vocabulary"]
+                        }
+                    ]
+                }
+                return response
             
-        if "vocabulary" not in result:
-            log.error(f"❌ Fragment {index}/{total} missing 'vocabulary' key in result: {result}")
-            return {"vocabulary": []}
-            
-        # Validate each vocabulary term
-        valid_terms = []
-        for term_idx, term in enumerate(result.get("vocabulary", []), 1):
-            if not isinstance(term, dict):
-                log.warning(f"Term {term_idx} in fragment {index} is not a dict: {type(term)}")
-                continue
-                
-            # Check required fields
-            required_fields = ["term", "vocabulary_type", "definition", "usage_notes", "variants"]
-            missing_fields = [field for field in required_fields if field not in term]
-            if missing_fields:
-                log.warning(f"Term {term_idx} in fragment {index} missing required fields: {missing_fields}")
-                continue
-                
-            # Validate field types
-            invalid_fields = []
-            for field in ["term", "vocabulary_type", "definition", "usage_notes"]:
-                if not isinstance(term[field], str):
-                    invalid_fields.append(f"{field} (expected str, got {type(term[field])})")
-            
-            if not isinstance(term["variants"], list):
-                invalid_fields.append(f"variants (expected list, got {type(term['variants'])})")
-                
-            if invalid_fields:
-                log.warning(f"Term {term_idx} in fragment {index} has invalid field types: {invalid_fields}")
-                continue
-                
-            # Clean up variants list
-            term["variants"] = [v for v in term["variants"] if isinstance(v, str) and v]
-            
-            valid_terms.append(term)
-            log.debug(f"Added valid term from fragment {index}: {term['term']}")
-            
-        terms = len(valid_terms)
-        log.info(f"✓ Fragment {index}/{total} - found {terms} valid terms")
-        return {
-            "original": fragment['text'],
-            "vocabulary": valid_terms
-        }
-            
+        return None
+        
     except Exception as e:
-        log.error(f"❌ Error in fragment {index}/{total}: {str(e)}")
+        log.error(f"Failed to analyze fragment {index}: {str(e)}")
         log.exception("Full traceback:")
-        raise  # Let Prefect handle the retry
+        return None
 
 @task(name="process_batch",
       retries=2,
@@ -119,38 +77,21 @@ Now analyze this lyric: {fragment['text']}{annotation_text}"""
       tags=["batch"])
 async def process_batch(fragments: List[Dict[str, str]], start_index: int, total: int) -> List[Dict[str, Any]]:
     """Process a batch of fragments concurrently."""
-    log = get_run_logger()
-    
     # Filter out invalid fragments
     valid_fragments = [(i+start_index, f) for i, f in enumerate(fragments, 1) 
-                      if f and isinstance(f, dict) and "text" in f]
+                      if f and isinstance(f, dict) and "text" in f and "id" in f and "timestamp" in f]
     
     if not valid_fragments:
         return []
     
     # Create tasks for all fragments
-    tasks = []
-    for index, fragment in valid_fragments:
-        future = analyze_fragment.submit(fragment, index, total)
-        tasks.append(future)
+    tasks = [analyze_fragment(fragment, idx, total) for idx, fragment in valid_fragments]
     
-    try:
-        # Wait for all tasks to complete
-        results = []
-        for future in tasks:
-            try:
-                result = future.result()  # No await needed here
-                if result is not None:
-                    results.append(result)
-            except Exception as e:
-                log.error(f"❌ Task failed: {str(e)}")
-                log.exception("Full traceback:")
-                
-        return results
-    except Exception as e:
-        log.error(f"❌ Batch processing failed: {str(e)}")
-        log.exception("Full traceback:")
-        return []
+    # Run all tasks concurrently and collect results
+    results = await asyncio.gather(*tasks)
+    
+    # Filter out None results
+    return [r for r in results if r is not None]
 
 @task(name="analyze_song_vocabulary",
       retries=2,
@@ -179,9 +120,11 @@ async def analyze_song_vocabulary(song_path: str) -> bool:
         fragments: List[Dict[str, str]] = []
         if isinstance(lyrics_data, dict) and "lyrics" in lyrics_data:
             for line in lyrics_data["lyrics"]:
-                if isinstance(line, dict) and "text" in line:
+                if isinstance(line, dict) and "text" in line and "id" in line and "timestamp" in line:
                     fragment = {
                         "text": line["text"],
+                        "id": line["id"],
+                        "timestamp": line["timestamp"],
                         "annotation": line.get("annotation", "")  # Get annotation if it exists
                     }
                     fragments.append(fragment)
@@ -220,12 +163,16 @@ async def analyze_song_vocabulary(song_path: str) -> bool:
         
         for result in all_results:
             if result and isinstance(result, dict) and "vocabulary" in result:
-                terms = result["vocabulary"]
-                original = result.get("original", "")
+                terms = result["vocabulary"][0]["vocabulary"]
+                original = result["vocabulary"][0].get("original", "")
+                id = result["vocabulary"][0].get("id", "")
+                timestamp = result["vocabulary"][0].get("timestamp", "")
                 
                 # Create an entry for this line if it has vocabulary terms
                 if terms:
                     line_entry = {
+                        "id": id,
+                        "timestamp": timestamp,
                         "original": original,
                         "vocabulary": []
                     }

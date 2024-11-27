@@ -5,6 +5,7 @@ from typing import Tuple, List, Dict, Any, Union
 from ftfy import fix_text
 from ftfy.fixes import uncurl_quotes
 import logging
+from src.constants.lyrics_analysis.linguistic import ParentheticalType
 
 logger = logging.getLogger(__name__)
 
@@ -12,14 +13,128 @@ class TextCleaningError(Exception):
     """Custom exception for text cleaning errors."""
     pass
 
-def extract_parentheticals(text: str) -> Tuple[str, List[str]]:
-    """Extract content in parentheses from text."""
+def classify_parenthetical(content: str) -> ParentheticalType:
+    """Classify the type of parenthetical content.
+    
+    Args:
+        content: The text inside parentheses to classify
+        
+    Returns:
+        ParentheticalType enum value
+    """
+    content = content.lower().strip()
+    
+    # Common ad-libs
+    if any(adlib in content for adlib in ["yeah", "uh", "oh", "ay", "woo", "hey"]):
+        return ParentheticalType.ADLIB
+        
+    # Background vocals often have descriptive terms
+    if any(term in content for term in ["backing", "background", "vocals", "harmonies", "chorus"]):
+        return ParentheticalType.BACKGROUND
+        
+    # Sound effects often describe sounds
+    if any(term in content for term in ["sound", "noise", "sfx", "effect", "beat"]):
+        return ParentheticalType.SOUND_EFFECT
+        
+    # Action descriptions
+    if any(term in content for term in ["repeat", "fade", "stops", "starts", "plays"]):
+        return ParentheticalType.OTHER
+        
+    # Repetition markers
+    if any(term in content for term in ["x2", "x3", "x4", "repeat", "times"]):
+        return ParentheticalType.REPETITION
+        
+    # Check for alternate lyrics (often OR or alternative phrasings)
+    if " or " in content or "alt" in content:
+        return ParentheticalType.ALTERNATE
+        
+    # Check for translations (often has foreign words)
+    if ":" in content or "means" in content or "translation" in content:
+        return ParentheticalType.TRANSLATION
+        
+    # Clarifications often explain context
+    if any(term in content for term in ["referring", "means", "i.e.", "aka", "meaning"]):
+        return ParentheticalType.CLARIFICATION
+        
+    return ParentheticalType.OTHER
+
+def extract_parentheticals(text: str) -> Tuple[str, List[Dict[str, Any]]]:
+    """Extract and classify content in parentheses from text, including nested parentheses.
+    
+    Args:
+        text: Input text containing parenthetical content
+        
+    Returns:
+        Tuple of (text with parentheses removed, list of parenthetical content with type)
+        
+    Examples:
+        >>> text = "Hello (yeah) and (good (morning) everyone)"
+        >>> clean, parens = extract_parentheticals(text)
+        >>> clean
+        'Hello and everyone'
+        >>> parens
+        [
+            {'content': 'yeah', 'type': 'ADLIB'},
+            {'content': 'good (morning)', 'type': 'OTHER'}
+        ]
+        
+        >>> text = "No parentheses here"
+        >>> clean, parens = extract_parentheticals(text)
+        >>> clean
+        'No parentheses here'
+        >>> parens
+        []
+    
+    Raises:
+        TextCleaningError: If regex fails
+    """
+    if not text:
+        return "", []
+        
     try:
-        parentheticals = re.findall(r'\((.*?)\)', text)
-        clean_text = re.sub(r'\s*\([^)]*\)', '', text).strip()
-        clean_text = re.sub(r'\s+', ' ', clean_text)
+        # Find outermost parentheses first
+        parentheticals = []
+        clean_text = text
+        
+        while '(' in clean_text:
+            # Find the next outermost pair
+            stack = []
+            start = -1
+            found_pair = False
+            
+            for i, char in enumerate(clean_text):
+                if char == '(':
+                    if not stack:
+                        start = i
+                    stack.append(i)
+                elif char == ')':
+                    if stack:
+                        stack.pop()
+                        if not stack:  # Found complete outermost pair
+                            content = clean_text[start + 1:i]
+                            ptype = classify_parenthetical(content)
+                            parentheticals.append({
+                                "content": content,
+                                "type": ptype.value
+                            })
+                            clean_text = clean_text[:start] + clean_text[i + 1:]
+                            found_pair = True
+                            break
+            
+            # If no complete pair was found, break to avoid infinite loop
+            if not found_pair:
+                logger.warning(f"Found unmatched parentheses in text: {clean_text}")
+                break
+        
+        # Clean up extra whitespace and fix comma spacing
+        clean_text = re.sub(r'\s+', ' ', clean_text).strip()
+        clean_text = re.sub(r'\s*,\s*', ', ', clean_text)  # Ensure exactly one space after comma
+        
         return clean_text, parentheticals
+        
     except Exception as e:
+        if isinstance(e, TextCleaningError):
+            raise
         raise TextCleaningError(f"Failed to extract parentheticals: {str(e)}") from e
 
 def clean_text(text: str) -> str:

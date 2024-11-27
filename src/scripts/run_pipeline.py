@@ -62,18 +62,15 @@ def run_pipeline(
             print("Valid options: all, ingest, preprocess, analyze, generate")
             return
             
-        # If song_id not provided, try to find it from artist and song name
-        if not song_id and artist and song:
+        # If song_id not provided and we're not starting with ingestion,
+        # try to find it from artist and song name
+        if not song_id and steps not in ["ingest", "all"]:
             song_id = find_song_id(artist, song)
             if not song_id:
                 print(f"Could not find song ID for {artist} - {song}")
                 print("Please make sure the song is ingested first using the ingestion pipeline.")
                 return
         
-        if not song_id and steps not in ["ingest"]:
-            print("Either song_id or both artist and song name must be provided")
-            return
-            
         # Set up paths
         song_path = Path("data/songs") / str(song_id) if song_id else None
         
@@ -91,6 +88,10 @@ def run_pipeline(
             if not result or not result.get("song_path"):
                 print("\n❌ Ingestion failed")
                 return
+                
+            # Get the song ID from the ingestion result for subsequent steps
+            song_id = str(result.get("id"))
+            song_path = Path(result.get("song_path"))
             
         # Run preprocessing if needed
         if steps in ["all", "preprocess"]:

@@ -7,7 +7,10 @@ from prefect import flow
 
 from src.tasks.preprocessing.text_cleaning import process_annotations
 from src.tasks.preprocessing.match_lyrics_to_annotations import match_lyrics_with_annotations
+from src.tasks.preprocessing.line_ids import add_line_ids
+from src.tasks.lyrics_analysis.parentheticals import analyze_parentheticals
 from src.utils.io.paths import get_song_dir
+import json
 
 logger = logging.getLogger(__name__)
 
@@ -23,6 +26,8 @@ def process_song_annotations_flow(song_id: int, base_path: Union[str, Path] = Pa
     Flow steps:
         1. Clean and standardize annotations
         2. Match annotations with lyrics
+        3. Add deterministic line IDs
+        4. Analyze parentheticals
         
     Returns:
         bool: True if all steps completed successfully
@@ -42,6 +47,46 @@ def process_song_annotations_flow(song_id: int, base_path: Union[str, Path] = Pa
         logger.error("Failed to match annotations with lyrics")
         return False
         
+    # Step 3: Add line IDs
+    id_result = add_line_ids(song_dir)
+    if not id_result:
+        logger.error("Failed to add line IDs")
+        return False
+        
+    # Step 4: Analyze parentheticals
+    try:
+        # Load lyrics with IDs
+        lyrics_path = song_dir / "lyrics_with_annotations.json"
+        with open(lyrics_path) as f:
+            lyrics_data = json.load(f)
+            
+        # Analyze each line and only keep ones with parentheticals
+        results = []
+        for line in lyrics_data["lyrics"]:
+            result = analyze_parentheticals(line["text"])
+            if result["parentheticals"]:  # Only include if it has parentheticals
+                results.append({
+                    "id": line["id"],
+                    "timestamp": line["timestamp"],
+                    "text": line["text"],
+                    "line_without_parentheses": result["line_without_parentheses"],
+                    "parentheticals": result["parentheticals"]
+                })
+                
+        # Save results
+        output_path = song_dir / "parentheticals_analysis.json"
+        with open(output_path, "w") as f:
+            json.dump({
+                "lines_with_parentheticals": results,
+                "total_parenthetical_lines": len(results)
+            }, f, indent=2)
+            
+        logger.info(f"✓ Found {len(results)} lines with parentheticals")
+        
+    except Exception as e:
+        logger.error(f"Failed to analyze parentheticals: {str(e)}")
+        return False
+        
     logger.info(f"Successfully processed annotations for song {song_id}")
     return True
 
@@ -50,11 +95,8 @@ if __name__ == "__main__":
     import sys
     
     if len(sys.argv) != 2:
-        print("Usage: python -m src.flows.preprocessing.subflows <song_id>")
+        print("Usage: python subflows.py <song_id>")
         sys.exit(1)
         
     song_id = int(sys.argv[1])
-    if process_song_annotations_flow(song_id):
-        print("✨ Successfully processed song annotations")
-    else:
-        print("❌ Failed to process song annotations")
+    process_song_annotations_flow(song_id)
