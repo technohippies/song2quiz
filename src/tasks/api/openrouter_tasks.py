@@ -7,7 +7,7 @@ import json
 logger = logging.getLogger(__name__)
 
 # Create a single client instance
-openrouter_client = OpenRouterClient()
+openrouter_client = None  # Initialize lazily
 
 @task(name="complete_openrouter_prompt",
       retries=3,
@@ -21,6 +21,10 @@ async def complete_openrouter_prompt(
     max_tokens: int = 512
 ) -> Dict[str, Any]:
     """Complete a prompt using OpenRouter API."""
+    global openrouter_client
+    if openrouter_client is None:
+        openrouter_client = OpenRouterClient(task_type=task_type)
+        
     try:
         response = await openrouter_client.complete(
             prompt=formatted_prompt,
@@ -37,4 +41,4 @@ async def complete_openrouter_prompt(
                 return response  # Return raw response if not JSON
         return response
     except Exception as e:
-        raise RuntimeError(f"Failed to complete prompt: {str(e)}") 
+        raise RuntimeError(f"Failed to complete prompt: {str(e)}")

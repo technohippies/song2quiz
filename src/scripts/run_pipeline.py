@@ -65,6 +65,9 @@ def run_pipeline(
         # If song_id not provided and we're not starting with ingestion,
         # try to find it from artist and song name
         if not song_id and steps not in ["ingest", "all"]:
+            if artist is None or song is None:
+                print("Artist and song name are required")
+                return
             song_id = find_song_id(artist, song)
             if not song_id:
                 print(f"Could not find song ID for {artist} - {song}")
@@ -90,8 +93,12 @@ def run_pipeline(
                 return
                 
             # Get the song ID from the ingestion result for subsequent steps
-            song_id = str(result.get("id"))
-            song_path = Path(result.get("song_path"))
+            song_id = str(result.get("id", ""))
+            song_path_str = result.get("song_path")
+            if song_path_str is None:
+                print("Error: song_path not found in result")
+                return
+            song_path = Path(song_path_str)
             
         # Run preprocessing if needed
         if steps in ["all", "preprocess"]:
@@ -147,10 +154,18 @@ def main():
                       help="Maximum number of retries for failed tasks")
     
     args = parser.parse_args()
+    
+    # Validate required arguments
+    if not args.artist or not args.song:
+        logger.error("Artist and song name are required")
+        return
+        
+    song_id = find_song_id(args.artist, args.song)
+    
     run_pipeline(
         artist=args.artist,
         song=args.song,
-        song_id=args.song_id,
+        song_id=song_id,
         steps=args.steps,
         batch_size=args.batch_size,
         max_retries=args.max_retries

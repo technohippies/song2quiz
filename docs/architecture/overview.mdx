@@ -47,6 +47,12 @@ Business logic implementations:
 - `lyrics_analysis/` - Lyrics processing logic
 - `preprocessing/` - Data cleaning implementations
 
+
+### Flows vs tasks vs scripts
+Tasks (eg vocabulary.py): Define the individual Prefect tasks
+Flow (eg main.py): Orchestrates the tasks using Prefect flows
+Script (eg analyze_vocabulary.py): CLI entry point that runs the flow
+
 ### Utilities (`src/utils/`)
 
 Shared helper functions:
