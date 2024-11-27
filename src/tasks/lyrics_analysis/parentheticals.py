@@ -1,6 +1,6 @@
 """Task for analyzing parenthetical content in lyrics."""
 import logging
-from typing import Dict, Any, List
+from typing import Dict, Any
 
 from src.utils.cleaning.text import extract_parentheticals
 

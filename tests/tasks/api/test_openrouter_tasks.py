@@ -4,7 +4,6 @@ import os
 import pytest
 from unittest.mock import patch, AsyncMock
 
-from src.utils.settings import settings
 from src.tasks.api.openrouter_tasks import complete_openrouter_prompt
 
 @pytest.fixture
