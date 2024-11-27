@@ -1,5 +1,4 @@
 """OpenRouter API client."""
-import json
 import logging
 from typing import Dict, Any, Optional, List
 import httpx
@@ -14,6 +13,8 @@ class OpenRouterAPIError(Exception):
 
 class OpenRouterAPI:
     """Client for OpenRouter API."""
+    
+    DEFAULT_FALLBACK_MODEL = "anthropic/claude-3-sonnet"
     
     def __init__(self, api_key: Optional[str] = None):
         """Initialize OpenRouter API client."""
@@ -31,11 +32,9 @@ class OpenRouterAPI:
     
     def _select_model(self, task_type: str, fallback_model: Optional[str] = None) -> Optional[str]:
         """Select appropriate model based on task type."""
-        logger.debug(f"Task type: {task_type}, Selected model: {fallback_model}")
-        
         if fallback_model:
             return fallback_model
-        
+            
         task_models = OPENROUTER_MODELS.get(task_type, [])
         return task_models[0] if task_models else None
     
@@ -47,7 +46,21 @@ class OpenRouterAPI:
         max_tokens: int = 1024,
         fallback_model: Optional[str] = None
     ) -> Dict[str, Any]:
-        """Complete a chat conversation."""
+        """Complete a chat conversation.
+        
+        Args:
+            messages: List of message dictionaries with role and content
+            task_type: Type of task to select model for
+            temperature: Sampling temperature
+            max_tokens: Maximum tokens to generate
+            fallback_model: Optional specific model to use
+            
+        Returns:
+            API response data
+            
+        Raises:
+            OpenRouterAPIError: If API request fails
+        """
         model = self._select_model(task_type, fallback_model)
         if not model:
             raise OpenRouterAPIError(f"No model found for task type: {task_type}")
@@ -64,23 +77,12 @@ class OpenRouterAPI:
                 }
             )
             response.raise_for_status()
-            
-            response_data = response.json()
-            logger.info(f"Response data: {json.dumps(response_data, indent=2)}")
-            
-            content = response_data["choices"][0]["message"]["content"]
-            logger.info(f"Raw content: {repr(content)}")
-            
-            try:
-                return json.loads(content)
-            except json.JSONDecodeError as e:
-                logger.warning(f"Failed to parse response as JSON: {str(e)}")
-                return {"content": content}
+            return response.json()
             
         except httpx.HTTPError as e:
             if "blocklist" in str(e).lower() and not fallback_model:
-                # Try fallback model
-                fallback = "nvidia/llama-3.1-nemotron-70b-instruct"
+                # Use class default fallback model
+                fallback = self.DEFAULT_FALLBACK_MODEL
                 logger.warning(f"Model {model} blocked, trying fallback model: {fallback}")
                 return self.complete(
                     messages=messages,

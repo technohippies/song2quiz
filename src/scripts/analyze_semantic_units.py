@@ -5,11 +5,10 @@ import sys
 from pathlib import Path
 
 from src.flows.generation.main import main
-from src.utils.io.paths import get_song_dir
 
 logging.basicConfig(
     level=logging.INFO,
-    format='%(asctime)s | %(levelname)-8s | %(name)s - %(message)s',
+    format='%(asctime)s | %(levelname)s | %(message)s',
     datefmt='%H:%M:%S'
 )
 
@@ -18,21 +17,21 @@ logger = logging.getLogger(__name__)
 async def run_analysis(song_id: str):
     """Run semantic units analysis on a song."""
     try:
-        song_path = get_song_dir(".", song_id)
-        if not song_path.exists():
+        song_path = f"data/songs/{song_id}"
+        if not Path(song_path).exists():
             logger.error(f"❌ Song directory does not exist: {song_path}")
             sys.exit(1)
             
-        if not (song_path / "lyrics_with_annotations.json").exists():
-            logger.error(f"❌ No lyrics with annotations found at {song_path}/lyrics_with_annotations.json")
+        if not Path(song_path, "lyrics_with_annotations.json").exists():
+            logger.error(f"❌ No lyrics file found at {song_path}/lyrics_with_annotations.json")
             sys.exit(1)
             
-        result = await main(str(song_path))
+        result = await main(song_path)
         if result:
-            logger.info("✓ Semantic units analysis completed successfully")
-            logger.info(f"✓ Results saved to {song_path}/semantic_units_analysis.json")
+            logger.info("✓ Analysis completed successfully")
         else:
-            logger.error("❌ Semantic units analysis failed")
+            logger.error("❌ Analysis failed")
+            
     except Exception as e:
         logger.error(f"❌ Error running analysis: {str(e)}")
         sys.exit(1)

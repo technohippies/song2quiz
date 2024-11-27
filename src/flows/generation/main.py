@@ -3,6 +3,7 @@ import logging
 from prefect import flow
 
 from src.tasks.lyrics_analysis.vocabulary import analyze_song_vocabulary
+from src.tasks.lyrics_analysis.semantic_units import analyze_song_semantic_units
 
 logger = logging.getLogger(__name__)
 
@@ -14,6 +15,12 @@ async def main(song_path: str) -> bool:
         vocab_results = await analyze_song_vocabulary(song_path)
         if not vocab_results:
             logger.error("❌ Vocabulary analysis failed")
+            return False
+            
+        # Run semantic units analysis
+        semantic_results = await analyze_song_semantic_units(song_path)
+        if not semantic_results:
+            logger.error("❌ Semantic units analysis failed")
             return False
             
         return True

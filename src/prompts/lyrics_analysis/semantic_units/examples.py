@@ -91,19 +91,7 @@ EXAMPLES = [
             ]
         }
     },
-
-    # Example 4: Not a semantic unit (technical directions)
-    {
-        "input": "[Verse 1: Artist Name] [Produced by Producer Name]",
-        "output": {
-            "semantic_units": []  # Empty because these are technical annotations, not meaningful units
-        }
-    }
 ]
-
-# Note: Example 4 shows that technical metadata, credits, or structural markers 
-# should not be analyzed as semantic units as they don't contribute to the 
-# meaning or interpretation of the lyrics themselves.
 
 # Note: Connecting words like 'but', 'and', 'so' are not included in the semantic units themselves.
 # The relationships between units will be documented in manually added annotations.

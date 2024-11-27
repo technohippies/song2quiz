@@ -75,32 +75,10 @@ class OpenRouterClient:
         try:
             model = self._select_model(fallback_model)
             
-            json_reminder = """
-            IMPORTANT: You must respond with a valid, complete JSON object following these rules:
-            1. Include EXACTLY ONE term in the response
-            2. Use this structure:
-            {
-              "vocabulary": [
-                {
-                  "term": "example",
-                  "vocabulary_type": "type",
-                  "definition": "definition",
-                  "usage_notes": "notes",
-                  "variants": ["variant1", "variant2"]
-                }
-              ]
-            }
-            3. Do not include any text outside the JSON.
-            4. Keep each field under 100 characters.
-            5. Include all offensive or explicit terms as-is without censoring.
-            """
-            
-            enhanced_system_prompt = (system_prompt or "") + json_reminder
-            
             request_data = {
                 "model": model,
                 "messages": [
-                    {"role": "system", "content": enhanced_system_prompt},
+                    {"role": "system", "content": system_prompt or ""},
                     {"role": "user", "content": prompt}
                 ],
                 "temperature": temperature,

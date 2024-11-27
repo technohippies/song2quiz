@@ -7,13 +7,13 @@ import asyncio
 import sys
 from typing import Dict, Any
 
+from src.utils.io.json import load_json
+from src.utils.io.paths import get_songs_dir
+from src.tasks.lyrics_analysis.parentheticals import analyze_parentheticals
+
 # Add src directory to Python path
 src_dir = Path(__file__).resolve().parent.parent
 sys.path.append(str(src_dir))
-
-from utils.io.json import load_json
-from utils.io.paths import get_songs_dir
-from tasks.lyrics_analysis.parentheticals import analyze_parentheticals
 
 logger = logging.getLogger(__name__)
 
@@ -33,7 +33,7 @@ async def analyze_song_parentheticals(song_path: Path) -> Dict[str, Any]:
         all_lyrics = [line["text"] for line in lyrics_data["lyrics"] if line["text"].strip()]
         
         for line in all_lyrics:
-            analysis = await analyze_parentheticals(line)
+            analysis = analyze_parentheticals(line)
             if analysis["parentheticals"]:
                 results.append({
                     "line": line,

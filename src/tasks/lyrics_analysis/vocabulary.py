@@ -94,63 +94,38 @@ async def process_batch(fragments: List[Dict[str, str]], start_index: int, total
     return [r for r in results if r is not None]
 
 @task(name="analyze_song_vocabulary",
-      retries=2,
-      retry_delay_seconds=10,
-      tags=["song"])
-async def analyze_song_vocabulary(song_path: str) -> bool:
+      retries=3,
+      retry_delay_seconds=2)
+async def analyze_song_vocabulary(song_path: str) -> Optional[Dict[str, Any]]:
     """Analyze vocabulary for a song."""
     log = get_run_logger()
     try:
-        # Load lyrics
-        lyrics_file = Path(song_path) / "lyrics_with_annotations.json"
-        if not lyrics_file.exists():
-            log.error(f"❌ No lyrics found at {lyrics_file}")
-            return False
+        # Convert string path to Path object for proper path handling
+        path = Path(song_path)
+        
+        # Read lyrics with annotations
+        lyrics_path = path / "lyrics_with_annotations.json"
+        if not lyrics_path.exists():
+            log.error("No lyrics found")
+            return None
             
-        try:
-            with open(lyrics_file) as f:
-                lyrics_data = json.load(f)
-        except json.JSONDecodeError as e:
-            log.error(f"❌ Failed to parse lyrics file: {str(e)}")
-            return False
+        with open(lyrics_path, "r") as f:
+            lyrics_data = json.load(f)
             
-        log.info(f"Loaded lyrics data from {lyrics_file}")
-            
-        # Extract fragments from lyrics_with_annotations.json format
-        fragments: List[Dict[str, str]] = []
-        if isinstance(lyrics_data, dict) and "lyrics" in lyrics_data:
-            for line in lyrics_data["lyrics"]:
-                if isinstance(line, dict) and "text" in line and "id" in line and "timestamp" in line:
-                    fragment = {
-                        "text": line["text"],
-                        "id": line["id"],
-                        "timestamp": line["timestamp"],
-                        "annotation": line.get("annotation", "")  # Get annotation if it exists
-                    }
-                    fragments.append(fragment)
-                    log.debug(f"Added fragment: {fragment['text']}")
-        else:
-            log.error(f"❌ Invalid lyrics data format: {type(lyrics_data)}")
-            return False
-            
-        if not fragments:
-            log.error("❌ No lyrics fragments found to analyze")
-            return False
-            
-        total_fragments = len(fragments)
-        log.info(f"Starting analysis of {total_fragments} fragments")
+        # Extract lines for analysis
+        fragments = [{"original": line["text"]} for line in lyrics_data["lyrics"]]
         
         # Process fragments in batches
         batch_size = 5
         all_results = []
         
         # Process batches sequentially but fragments within batch concurrently
-        for i in range(0, total_fragments, batch_size):
+        for i in range(0, len(fragments), batch_size):
             batch = fragments[i:i + batch_size]
             try:
-                batch_results = await process_batch(batch, i, total_fragments)
+                batch_results = await process_batch(batch, i, len(fragments))
                 all_results.extend(batch_results)
-                log.info(f"Completed batch {i//batch_size + 1}/{(total_fragments + batch_size - 1)//batch_size}")
+                log.info(f"Completed batch {i//batch_size + 1}/{(len(fragments) + batch_size - 1)//batch_size}")
             except Exception as e:
                 log.error(f"❌ Batch processing failed at index {i}: {str(e)}")
                 log.exception("Full traceback:")
@@ -190,18 +165,18 @@ async def analyze_song_vocabulary(song_path: str) -> bool:
                         all_vocabulary.append(line_entry)
         
         # Save results
-        output_file = Path(song_path) / "vocabulary_analysis.json"
+        output_file = path / "vocabulary_analysis.json"
         try:
             with open(output_file, 'w', encoding='utf-8') as f:
                 json.dump({"vocabulary": all_vocabulary}, f, ensure_ascii=False, indent=2)
         except Exception as e:
             log.error(f"❌ Failed to save results: {str(e)}")
             log.exception("Full traceback:")
-            return False
+            return None
             
         log.info(f"✓ Analysis complete - found {total_terms} unique vocabulary terms")
         log.info(f"Results saved to {output_file}")
-        return True
+        return {"vocabulary": all_vocabulary}
         
     except Exception as e:
         log.error(f"❌ Error analyzing vocabulary for {song_path}: {str(e)}")
