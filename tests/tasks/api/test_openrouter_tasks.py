@@ -48,6 +48,13 @@ def mock_settings():
         yield mock_settings
 
 
+@pytest.fixture
+def mock_openrouter():
+    """Mock OpenRouter API responses"""
+    with patch("src.tasks.api.openrouter_tasks.complete_openrouter_prompt") as mock:
+        yield mock
+
+
 @pytest.mark.asyncio()
 async def test_complete_prompt_success(mock_openrouter):
     """Test successful prompt completion"""
