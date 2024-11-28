@@ -1,0 +1,69 @@
+{
+  "$schema": "https://mintlify.com/schema.json",
+  "name": "Song2Quiz",
+  "logo": {
+    "dark": "/logo/dark.svg",
+    "light": "/logo/light.svg"
+  },
+  "favicon": "/favicon.png",
+  "colors": {
+    "primary": "#0D9373",
+    "light": "#07C983",
+    "dark": "#0D9373",
+    "anchors": {
+      "from": "#0D9373",
+      "to": "#07C983"
+    }
+  },
+  "topbarLinks": [
+    {
+      "name": "GitHub",
+      "url": "https://github.com/technohippies/song2quiz"
+    }
+  ],
+  "topbarCtaButton": {
+    "name": "Get Started",
+    "url": "installation"
+  },
+  "anchors": [
+    {
+      "name": "API Reference",
+      "icon": "rectangle-terminal",
+      "url": "cli"
+    },
+    {
+      "name": "GitHub",
+      "icon": "github",
+      "url": "https://github.com/technohippies/song2quiz"
+    }
+  ],
+  "navigation": [
+    {
+      "group": "Getting Started",
+      "pages": ["installation"]
+    },
+    {
+      "group": "Architecture",
+      "pages": [
+        "architecture/overview",
+        "architecture/project-structure"
+      ]
+    },
+    {
+      "group": "CLI Reference",
+      "pages": [
+        "cli/ingestion",
+        "cli/preprocessing",
+        "cli/generation",
+        "cli/run-pipeline"
+      ]
+    },
+    {
+      "group": "Development",
+      "pages": ["development/testing"]
+    }
+  ],
+  "footerSocials": {
+    "github": "https://github.com/technohippies/song2quiz"
+  }
+}
