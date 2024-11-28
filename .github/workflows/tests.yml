@@ -16,9 +16,6 @@ jobs:
       uses: astral-sh/setup-uv@v4
       with:
         version: "0.5.5"  # Pin specific version
-        enable-cache: true
-        # Remove the lock file dependency for now
-        # cache-dependency-glob: "uv.lock"
 
     - name: Set up Python
       uses: actions/setup-python@v5
