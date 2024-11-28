@@ -17,13 +17,14 @@ jobs:
       with:
         version: "0.5.5"  # Pin specific version
         enable-cache: true
-        cache-dependency-glob: "uv.lock"
+        # Remove the lock file dependency for now
+        # cache-dependency-glob: "uv.lock"
 
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
         python-version: '3.12'
-        python-version-file: "pyproject.toml"  # Use project's Python constraints
+        python-version-file: "pyproject.toml"
 
     - name: Install dependencies
       run: |
