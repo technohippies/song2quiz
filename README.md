@@ -6,7 +6,7 @@ An advanced lyrics analysis and quiz generation system that leverages AI to prov
 
 ## Documentation
 
- [Full Documentation](https://song2quiz.mintlify.app)
+[Full Documentation](https://song2quiz.mintlify.app)
 
 ## Quick Start
 
@@ -14,6 +14,12 @@ An advanced lyrics analysis and quiz generation system that leverages AI to prov
 # Clone the repository
 git clone https://github.com/technohippies/song2quiz.git
 cd song2quiz
+
+# Create and activate virtual environment
+uv venv .venv
+source .venv/bin/activate  # Mac or Linux
+# or
+.venv\Scripts\activate     # Windows
 
 # Install dependencies
 uv pip install -r requirements.txt

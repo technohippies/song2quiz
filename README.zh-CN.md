@@ -16,12 +16,20 @@ git clone https://github.com/technohippies/song2quiz.git
 cd song2quiz
 ```
 
-2. 安装依赖：
+2. 创建并激活虚拟环境：
+```bash
+uv venv .venv
+source .venv/bin/activate  # Mac 或 Linux
+# 或
+.venv\Scripts\activate     # Windows
+```
+
+3. 安装依赖：
 ```bash
 uv pip install -r requirements.txt
 ```
 
-3. 设置环境变量（复制 .env.example 到 .env 并填写你的密钥）：
+4. 设置环境变量（复制 .env.example 到 .env 并填写你的密钥）：
 ```bash
 cp .env.example .env
 # 在.env中编辑以下API密钥：
