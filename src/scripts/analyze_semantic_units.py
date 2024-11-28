@@ -4,7 +4,6 @@ import logging
 import sys
 from pathlib import Path
 from src.flows.generation.main import main
-from src.services.langfuse import langfuse
 from src.utils.settings import settings
 
 # Configure logging

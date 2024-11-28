@@ -26,6 +26,16 @@ venv/
 data/songs/*
 !data/songs/.gitkeep
 
+# Testing
+.coverage
+.pytest_cache/
+htmlcov/
+.tox/
+
 # OS
 .DS_Store
 Thumbs.db
+
+# Temporary/Build files
+python
+source
