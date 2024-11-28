@@ -1,0 +1,50 @@
+# Same as Black.
+line-length = 88
+indent-width = 4
+
+# Assume Python 3.12
+target-version = "py312"
+
+[lint]
+# Start with essential rules, we can enable more gradually
+select = [
+    "E",   # pycodestyle errors
+    "F",   # pyflakes
+    "I",   # isort
+    "B",   # flake8-bugbear
+    "W",   # pycodestyle warnings
+]
+
+# Ignore some rules initially
+ignore = [
+    # Ignore assert statements in tests
+    "S101",
+    # Ignore print statements for now
+    "T201",
+    # Ignore missing docstrings for now
+    "D100", "D101", "D102", "D103", "D104", "D105",
+    # Ignore missing type annotations for now
+    "ANN001", "ANN101", "ANN102", "ANN201", "ANN204", "ANN401",
+    # Allow longer lines in specific files
+    "E501",
+]
+
+# Allow fix for all enabled rules (when `--fix`) is provided.
+fixable = ["ALL"]
+unfixable = []
+
+# Allow unused variables when underscore-prefixed.
+dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
+
+[format]
+# Like Black, use double quotes for strings.
+quote-style = "double"
+
+# Like Black, indent with spaces, rather than tabs.
+indent-style = "space"
+
+# Like Black, respect magic trailing commas.
+skip-magic-trailing-comma = false
+
+# Like Black, automatically detect the appropriate line ending.
+line-ending = "auto"
