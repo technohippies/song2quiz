@@ -1,4 +1,4 @@
-# Song2Quiz2
+# Song2Quiz
 
 [English](README.md) | [简体中文](README.zh-CN.md)
 
@@ -6,7 +6,7 @@ An advanced lyrics analysis and quiz generation system that leverages AI to prov
 
 ## Documentation
 
-📚 [Full Documentation](https://docs.song2quiz.com)
+ [Full Documentation](https://docs.song2quiz.com)
 
 ## Quick Start
 

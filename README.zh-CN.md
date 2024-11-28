@@ -1,4 +1,4 @@
-# Song2Quiz2
+# Song2Quiz
 
 [English](README.md) | [简体中文](README.zh-CN.md)
 

@@ -1,33 +1,14 @@
 # Project Structure
 
-song2quiz2/
-├── src/                      # Source code
-│   ├── flows/               # Prefect flow definitions
-│   │   ├── exercises/       # Exercise generation flows
-│   │   ├── ingestion/       # Song data ingestion flows
-│   │   └── preprocessing/   # Data preprocessing flows
-│   ├── models/              # Data models and schemas
-│   │   ├── api/            # API response models
-│   │   ├── exercises/      # Exercise type models
-│   │   └── lyrics_analysis/ # Lyrics analysis models
-│   ├── prompts/             # LLM prompt templates
-│   │   └── lyrics_analysis/ # Analysis-specific prompts
-│   ├── scripts/             # CLI entry points
-│   ├── services/            # External API integrations
-│   ├── tasks/               # Core task implementations
-│   │   ├── exercises/      # Exercise generation tasks
-│   │   ├── lyrics_analysis/ # Lyrics analysis tasks
-│   │   └── preprocessing/   # Data preprocessing tasks
-│   └── utils/               # Utility functions
-│       ├── cleaning/       # Text cleaning utilities
-│       └── io/            # I/O operations
-├── tests/                   # Test suite
-├── data/                    # Data storage
-│   ├── songs.json          # Song metadata index
-│   └── songs/              # Individual song data
-├── docs/                    # Documentation
-├── scripts/                 # Development scripts
-└── resources/               # Static resources
+song2quiz/
+├── src/               # Source code
+│   ├── flows/         # Prefect workflows
+│   ├── services/      # External API integrations
+│   ├── tasks/         # Individual task definitions
+│   └── utils/         # Utility functions
+├── tests/             # Test suite
+├── docs/              # Documentation
+└── data/              # Data storage
 
 ## Key Components
 
