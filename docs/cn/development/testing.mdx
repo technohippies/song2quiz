@@ -1,0 +1,85 @@
+# 测试
+
+测试套件的组织方式与 `src` 目录结构相对应，便于查找和维护每个组件的测试。
+
+## 运行测试
+
+```bash
+# 运行所有测试
+pytest
+
+# 运行特定测试文件
+pytest tests/scripts/test_ingest_song.py
+
+# 运行带覆盖率的测试
+pytest --cov=src
+
+# 运行匹配模式的测试
+pytest -k "test_ingest"
+```
+
+## 测试组织
+
+### CLI 测试 (`tests/scripts/`)
+
+命令行界面的测试：
+
+- `test_ingest_song.py` - 歌曲摄入 CLI
+- `test_preprocess_song.py` - 预处理 CLI
+- `test_run_pipeline.py` - 完整流水线 CLI
+
+### 流程测试 (`tests/flows/`)
+
+Prefect 流程的集成测试：
+
+- `ingestion/test_subflows.py` - 歌曲摄入流程
+- `preprocessing/test_subflows.py` - 数据预处理流程
+
+### 任务测试 (`tests/tasks/`)
+
+核心业务逻辑的单元测试：
+
+- `preprocessing/test_match_lyrics_to_annotations.py`
+- `preprocessing/test_text_cleaning.py`
+
+## 测试数据
+
+测试数据存储在 `tests/fixtures` 中，包括：
+
+- 示例歌曲元数据
+- 模拟 API 响应
+- 预期处理输出
+
+## 编写测试
+
+### 测试结构
+
+```python
+def test_ingest_song_cli_success(tmp_path):
+    """测试歌曲摄入 CLI 成功。"""
+    # 准备
+    song = "Test Song"
+    artist = "Test Artist"
+    
+    # 执行
+    result = runner.invoke(ingest_cli, ["--song", song, "--artist", artist])
+    
+    # 验证
+    assert result.exit_code == 0
+```
+
+### 模拟外部服务
+
+```python
+@patch("src.services.genius.GeniusClient.get_song_id")
+def test_song_ingestion_flow(mock_get_song_id):
+    """使用模拟的 Genius API 测试歌曲摄入流程。"""
+    # 设置模拟
+    mock_get_song_id.return_value = "12345"
+    
+    # 运行测试
+    result = song_ingestion_flow(song="Test", artist="Artist")
+    
+    # 验证
+    assert result["id"] == "12345"
+```

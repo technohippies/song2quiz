@@ -15,6 +15,65 @@
       "to": "#07C983"
     }
   },
+  "versions": ["en", "cn"],
+  "navigation": [
+    {
+      "group": "Getting Started",
+      "version": "en",
+      "pages": ["en/installation"]
+    },
+    {
+      "group": "Architecture",
+      "version": "en",
+      "pages": [
+        "en/architecture/overview",
+        "en/architecture/project-structure"
+      ]
+    },
+    {
+      "group": "CLI Reference",
+      "version": "en",
+      "pages": [
+        "en/cli/ingestion",
+        "en/cli/preprocessing",
+        "en/cli/generation",
+        "en/cli/run-pipeline"
+      ]
+    },
+    {
+      "group": "Development",
+      "version": "en",
+      "pages": ["en/development/testing"]
+    },
+    {
+      "group": "入门指南",
+      "version": "cn",
+      "pages": ["cn/installation"]
+    },
+    {
+      "group": "架构",
+      "version": "cn",
+      "pages": [
+        "cn/architecture/overview",
+        "cn/architecture/project-structure"
+      ]
+    },
+    {
+      "group": "命令行工具",
+      "version": "cn",
+      "pages": [
+        "cn/cli/ingestion",
+        "cn/cli/preprocessing",
+        "cn/cli/generation",
+        "cn/cli/run-pipeline"
+      ]
+    },
+    {
+      "group": "开发",
+      "version": "cn",
+      "pages": ["cn/development/testing"]
+    }
+  ],
   "topbarLinks": [
     {
       "name": "GitHub",
@@ -23,44 +82,25 @@
   ],
   "topbarCtaButton": {
     "name": "Get Started",
-    "url": "installation"
+    "url": "en/installation"
   },
   "anchors": [
     {
       "name": "API Reference",
       "icon": "rectangle-terminal",
-      "url": "cli"
+      "url": "en/cli/ingestion",
+      "version": "en"
+    },
+    {
+      "name": "API 参考",
+      "icon": "rectangle-terminal",
+      "url": "cn/cli/ingestion",
+      "version": "cn"
     },
     {
       "name": "GitHub",
       "icon": "github",
       "url": "https://github.com/technohippies/song2quiz"
-    }
-  ],
-  "navigation": [
-    {
-      "group": "Getting Started",
-      "pages": ["installation"]
-    },
-    {
-      "group": "Architecture",
-      "pages": [
-        "architecture/overview",
-        "architecture/project-structure"
-      ]
-    },
-    {
-      "group": "CLI Reference",
-      "pages": [
-        "cli/ingestion",
-        "cli/preprocessing",
-        "cli/generation",
-        "cli/run-pipeline"
-      ]
-    },
-    {
-      "group": "Development",
-      "pages": ["development/testing"]
     }
   ],
   "footerSocials": {

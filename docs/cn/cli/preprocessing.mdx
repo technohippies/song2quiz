@@ -1,0 +1,19 @@
+# 预处理
+
+将歌词与其对应的 Genius 注释匹配。
+
+```bash
+python -m src.scripts.preprocess_song --song "Jesus Is King" --artist "Kanye West"
+# 或者
+python -m src.scripts.preprocess_song --song-id 123
+```
+
+## 处理流程
+
+1. 从 `lyrics.json` 获取歌词，从 `annotations_cleaned.json` 获取注释
+2. 通过三种方式尝试匹配歌词和注释：
+   - 精确匹配
+   - 在歌词中查找注释片段
+   - 在注释片段中查找歌词
+3. 生成确定性的唯一行 ID
+4. 将匹配的歌词和注释输出到 `lyrics_with_annotations.json`

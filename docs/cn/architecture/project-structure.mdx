@@ -1,0 +1,59 @@
+# 项目结构
+
+song2quiz/
+├── src/               # 源代码
+│   ├── flows/         # Prefect 工作流
+│   ├── services/      # 外部 API 集成
+│   ├── tasks/         # 独立任务定义
+│   └── utils/         # 工具函数
+├── tests/             # 测试套件
+├── docs/              # 文档
+└── data/              # 数据存储
+
+## 关键组件
+
+### 源代码 (`src/`)
+`src/` 目录包含所有应用程序逻辑，组织为几个关键模块：
+
+- **flows/**: Prefect 工作流定义，用于编排任务
+- **models/**: 数据模型和类型定义
+- **prompts/**: LLM 交互模板
+- **services/**: 外部 API 集成
+- **tasks/**: 核心业务逻辑实现
+- **utils/**: 辅助函数和工具
+
+### 数据存储 (`data/`)
+- **songs.json**: 所有已处理歌曲的中央索引
+- **songs/**: 单个歌曲数据文件
+
+### 支持目录
+- **tests/**: 测试套件，镜像 src/ 结构
+- **docs/**: 项目文档
+- **scripts/**: 开发和维护脚本
+- **resources/**: 静态资源
+
+## 关键文件
+
+- `requirements.txt`: Python 依赖
+- `data/songs.json`: 中央歌曲元数据索引
+- `.env`: 环境配置（API 密钥等）
+
+## 开发指南
+
+1. 新功能应在 `src/flows/` 中实现为 Prefect 工作流
+2. 数据模型应在 `src/models/` 中定义
+3. 核心业务逻辑属于 `src/tasks/`
+4. 测试应镜像 `src/` 目录结构
+
+## 常见操作
+
+### 添加新功能
+1. 在 `src/models/` 中定义模型
+2. 在 `src/tasks/` 中实现核心逻辑
+3. 在 `src/flows/` 中创建 Prefect 工作流
+4. 在 `tests/` 中添加测试
+
+### 处理新歌曲
+1. 通过 `src/flows/ingestion/` 摄入歌曲数据
+2. 元数据存储在 `data/songs.json`
+3. 单个歌曲数据存储在 `data/songs/`

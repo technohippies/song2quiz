@@ -1,0 +1,49 @@
+# 数据摄入
+
+数据摄入阶段从多个来源获取歌曲数据：
+- 从 Genius 获取歌词和注释
+- 从 LRCLib 获取带时间戳的歌词
+- 从两个服务获取额外的元数据
+
+## 使用方法
+
+```bash
+python -m src.scripts.ingest_song --song "Jesus Is King" --artist "Kanye West"
+```
+
+## 命令选项
+
+```bash
+python -m src.scripts.ingest_song [选项]
+
+选项:
+  --song TEXT, -s TEXT     歌曲标题 [必需]
+  --artist TEXT, -a TEXT   艺术家名称 [必需]
+  --data-dir TEXT, -d TEXT 数据存储的基础目录
+  --help                   显示此帮助信息并退出
+```
+
+## 数据来源
+
+### Genius API
+- 歌词和结构
+- 社区注释和解释
+- 元数据（标题、艺术家、专辑、发布日期）
+- 流派和主题信息
+
+### LRCLib API
+- 带时间戳的歌词（如果可用）
+- 逐行时间信息
+- 替代纯文本歌词
+
+## 输出文件
+
+摄入的数据存储在：
+```
+data/songs/{genius_song_id}/
+├── genius_metadata.json  # 来自 Genius 的歌曲元数据
+├── genius_lyrics.json    # 歌词和注释
+└── lrclib_lyrics.json    # 来自 LRCLib 的歌词，通常带有时间戳
+```
+
+`data/songs.json` 文件作为所有已摄入歌曲的中央索引。

@@ -1,0 +1,85 @@
+# 架构概览
+
+Song2Quiz 由几个关键组件组成，每个组件在练习生成流程中都有特定的职责。
+
+## 项目结构
+
+```
+song2quiz/
+├── src/          # 源代码
+├── tests/        # 测试套件
+├── data/         # 数据存储
+├── docs/         # 文档
+└── scripts/      # 开发脚本
+```
+
+## 核心组件
+
+### 流程编排 (`src/flows/`)
+
+使用 Prefect 工作流定义来编排各种任务：
+
+- `exercises/` - 练习生成工作流
+- `ingestion/` - 歌曲数据获取和存储
+- `preprocessing/` - 数据清理和准备
+
+### 数据模型 (`src/models/`)
+
+类型定义和模式验证：
+
+- `api/` - 外部 API 响应模型
+- `exercises/` - 练习类型定义
+- `lyrics_analysis/` - 歌词处理模型
+
+### 外部服务 (`src/services/`)
+
+API 客户端和外部集成：
+
+- `genius.py` - Genius API 客户端
+- `lrclib.py` - LRCLib API 客户端
+- `openrouter.py` - OpenRouter API 客户端
+
+### 核心逻辑 (`src/tasks/`)
+
+业务逻辑实现：
+
+- `exercises/` - 练习生成算法
+- `lyrics_analysis/` - 歌词处理逻辑
+- `preprocessing/` - 数据清理实现
+
+### 工作流与任务
+- 任务（如 vocabulary.py）：定义独立的 Prefect 任务
+- 工作流（如 main.py）：使用 Prefect 流程编排任务
+- 脚本（如 analyze_vocabulary.py）：运行工作流的命令行入口
+
+### 工具类 (`src/utils/`)
+
+共享辅助函数：
+
+- `cleaning/` - 文本清理工具
+- `io/` - 文件和路径操作
+
+### 测试套件 (`tests/`)
+
+镜像 `src` 目录结构：
+
+- `flows/` - 工作流集成测试
+- `scripts/` - 命令行测试
+- `tasks/` - 核心逻辑单元测试
+
+## 数据流
+
+1. **数据摄入**
+   - 命令行触发摄入工作流
+   - Genius API 客户端获取数据
+   - 原始数据存储在歌曲目录中
+
+2. **预处理**
+   - 清理和规范化文本
+   - 处理注释
+   - 对齐歌词和注释
+
+3. **练习生成**
+   - 分析处理后的数据
+   - 生成练习变体
+   - 格式化展示

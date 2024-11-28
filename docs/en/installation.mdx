@@ -16,7 +16,13 @@ cd song2quiz
 2. Create and activate virtual environment:
 ```bash
 # Using uv (recommended)
-uv venv
+uv venv .venv
+source .venv/bin/activate  # Mac or Linux
+# or
+.venv\Scripts\activate     # Windows
+
+# Or using traditional venv
+python -m venv .venv
 source .venv/bin/activate  # Mac or Linux
 # or
 .venv\Scripts\activate     # Windows
