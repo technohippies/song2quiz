@@ -1,8 +1,22 @@
 # Python
 __pycache__/
 *.py[cod]
-.Python
-*.so
+*$py.class
+.pytest_cache/
+.coverage
+htmlcov/
+.ruff_cache/
+.mypy_cache/
+
+# Virtual Environment
+venv/
+.env/
+.venv/
+
+# IDE
+.idea/
+.vscode/
+*.swp
 
 # Build / Distribution
 build/
@@ -10,27 +24,12 @@ dist/
 *.egg-info/
 *.egg
 
-# Virtual Environment
-.venv/
-venv/
-
-# Environment Variables
-.env
-
-# IDE
-.idea/
-.vscode/
-*.swp
-
 # Project specific
 data/songs.json
 data/songs/*
 !data/songs/.gitkeep
 
 # Testing
-.coverage
-.pytest_cache/
-htmlcov/
 .tox/
 
 # OS
@@ -40,3 +39,4 @@ Thumbs.db
 # Temporary/Build files
 python
 source
+uv.lock
