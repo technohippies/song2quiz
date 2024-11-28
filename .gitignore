@@ -23,6 +23,7 @@ venv/
 *.swp
 
 # Project specific
+data/songs.json
 data/songs/*
 !data/songs/.gitkeep
 
