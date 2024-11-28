@@ -31,6 +31,9 @@ jobs:
     - name: Run tests
       env:
         OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+        GENIUS_API_TOKEN: ${{ secrets.GENIUS_API_TOKEN }}
+        LANGFUSE_PUBLIC_KEY: ${{ secrets.LANGFUSE_PUBLIC_KEY }}
+        LANGFUSE_SECRET_KEY: ${{ secrets.LANGFUSE_SECRET_KEY }}
       run: |
         source .venv/bin/activate
         uv run pytest
