@@ -3,7 +3,8 @@ import logging
 from typing import Dict, Any, Optional, List
 import httpx
 from src.utils.settings import settings
-from src.constants.api import OPENROUTER_MODELS
+from src.constants.api import OPENROUTER_MODELS, FALLBACK_MODEL
+from src.services.langfuse import langfuse
 
 logger = logging.getLogger(__name__)
 
@@ -13,8 +14,6 @@ class OpenRouterAPIError(Exception):
 
 class OpenRouterAPI:
     """Client for OpenRouter API."""
-    
-    DEFAULT_FALLBACK_MODEL = "anthropic/claude-3-sonnet"
     
     def __init__(self, api_key: Optional[str] = None):
         """Initialize OpenRouter API client."""
@@ -38,7 +37,7 @@ class OpenRouterAPI:
         task_models = OPENROUTER_MODELS.get(task_type, [])
         return task_models[0] if task_models else None
     
-    def complete(
+    async def complete(
         self,
         messages: List[Dict[str, str]],
         task_type: str,
@@ -46,26 +45,12 @@ class OpenRouterAPI:
         max_tokens: int = 1024,
         fallback_model: Optional[str] = None
     ) -> Dict[str, Any]:
-        """Complete a chat conversation.
-        
-        Args:
-            messages: List of message dictionaries with role and content
-            task_type: Type of task to select model for
-            temperature: Sampling temperature
-            max_tokens: Maximum tokens to generate
-            fallback_model: Optional specific model to use
-            
-        Returns:
-            API response data
-            
-        Raises:
-            OpenRouterAPIError: If API request fails
-        """
-        model = self._select_model(task_type, fallback_model)
-        if not model:
-            raise OpenRouterAPIError(f"No model found for task type: {task_type}")
-        
+        """Complete a chat conversation."""
         try:
+            model = self._select_model(task_type, fallback_model)
+            if not model:
+                raise OpenRouterAPIError(f"No model found for task type: {task_type}")
+            
             response = self.client.post(
                 f"{self.base_url}/chat/completions",
                 headers=self.headers,
@@ -81,16 +66,14 @@ class OpenRouterAPI:
             
         except httpx.HTTPError as e:
             if "blocklist" in str(e).lower() and not fallback_model:
-                # Use class default fallback model
-                fallback = self.DEFAULT_FALLBACK_MODEL
-                logger.warning(f"Model {model} blocked, trying fallback model: {fallback}")
-                return self.complete(
+                fallback = FALLBACK_MODEL[0]
+                logger.warning(f"Model {model} blocked, trying fallback: {fallback}")
+                return await self.complete(
                     messages=messages,
                     task_type=task_type,
                     temperature=temperature,
                     max_tokens=max_tokens,
                     fallback_model=fallback
                 )
+                
             raise OpenRouterAPIError(f"HTTP error: {str(e)}") from e
-        except Exception as e:
-            raise OpenRouterAPIError(f"Unexpected error: {str(e)}") from e

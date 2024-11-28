@@ -3,16 +3,24 @@ import asyncio
 import logging
 import sys
 from pathlib import Path
-
 from src.flows.generation.main import main
+from src.services.langfuse import langfuse
+from src.utils.settings import settings
 
+# Configure logging
 logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s | %(levelname)s | %(message)s',
+    level=logging.DEBUG,
+    format='%(asctime)s | %(name)s | %(levelname)s | %(message)s',
     datefmt='%H:%M:%S'
 )
 
 logger = logging.getLogger(__name__)
+
+# Log Langfuse status
+logger.info("Checking Langfuse configuration:")
+logger.info(f"Public key set: {bool(settings.LANGFUSE_PUBLIC_KEY)}")
+logger.info(f"Secret key set: {bool(settings.LANGFUSE_SECRET_KEY)}")
+logger.info(f"Host: {settings.LANGFUSE_HOST}")
 
 async def run_analysis(song_id: str):
     """Run semantic units analysis on a song."""

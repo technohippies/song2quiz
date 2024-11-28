@@ -1,44 +1,71 @@
 from prefect import task
-from src.services.openrouter import OpenRouterClient
-from typing import Dict, Any
+from typing import Dict, Any, Optional, cast
 import logging
-import json
+from src.models.api.openrouter import OpenRouterAPI
+from langfuse.decorators import observe, langfuse_context
+from langfuse.model import ModelUsage
 
 logger = logging.getLogger(__name__)
 
-# Create a single client instance
-openrouter_client = None  # Initialize lazily
-
-@task(name="complete_openrouter_prompt",
-      retries=3,
-      retry_delay_seconds=2,
-      tags=["api"])
+@task(name="complete_openrouter_prompt")
+@observe(as_type="generation")
 async def complete_openrouter_prompt(
     formatted_prompt: str,
-    task_type: str,
     system_prompt: str,
+    task_type: str,
     temperature: float = 0.7,
     max_tokens: int = 512
-) -> Dict[str, Any]:
+) -> Optional[Dict[str, Any]]:
     """Complete a prompt using OpenRouter API."""
-    global openrouter_client
-    if openrouter_client is None:
-        openrouter_client = OpenRouterClient(task_type=task_type)
-        
     try:
-        response = await openrouter_client.complete(
-            prompt=formatted_prompt,
-            system_prompt=system_prompt,
+        client = OpenRouterAPI()
+        model = client._select_model(task_type)
+        if not model:
+            raise ValueError(f"No model found for task type: {task_type}")
+            
+        messages = [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": formatted_prompt}
+        ]
+        
+        response = await client.complete(
+            messages=messages,
+            task_type=task_type,
             temperature=temperature,
             max_tokens=max_tokens
         )
         
-        if response and isinstance(response, dict) and "choices" in response:
-            content = response["choices"][0]["message"]["content"]
-            try:
-                return json.loads(content)  # Return parsed JSON directly
-            except json.JSONDecodeError:
-                return response  # Return raw response if not JSON
+        # Create ModelUsage object
+        usage = ModelUsage(
+            input=cast(int, response.get("usage", {}).get("prompt_tokens", 0)),
+            output=cast(int, response.get("usage", {}).get("completion_tokens", 0)),
+            total=cast(int, response.get("usage", {}).get("total_tokens", 0)),
+            unit="TOKENS"
+        )
+        
+        # Update observation with usage and model info
+        langfuse_context.update_current_observation(
+            model=model,
+            input=messages,
+            output=response,
+            usage=usage,
+            metadata={
+                "model": model,
+                "task_type": task_type,
+                "temperature": temperature,
+                "max_tokens": max_tokens,
+                "finish_reason": response.get("choices", [{}])[0].get("finish_reason"),
+                "prompt_version": "1",
+                "prompt_template": "semantic_analysis",
+                "response_format": "json"
+            }
+        )
+        
         return response
+            
     except Exception as e:
-        raise RuntimeError(f"Failed to complete prompt: {str(e)}")
+        langfuse_context.update_current_observation(
+            level="ERROR",
+            metadata={"error": str(e)}
+        )
+        raise

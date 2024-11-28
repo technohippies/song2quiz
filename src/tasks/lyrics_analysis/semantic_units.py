@@ -12,7 +12,7 @@ from src.prompts.lyrics_analysis.semantic_units.examples import EXAMPLES
 
 logger = logging.getLogger(__name__)
 
-BATCH_SIZE = 5
+BATCH_SIZE = 20
 
 def format_prompt(examples: List[Dict[str, Any]], line: str) -> str:
     """Format prompt with examples."""

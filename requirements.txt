@@ -29,3 +29,5 @@ pyright>=1.1.0
 nltk>=3.8.1
 ftfy>=6.1.1
 ruff>=0.1.0
+
+langfuse
