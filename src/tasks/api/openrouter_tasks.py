@@ -35,13 +35,16 @@ async def complete_openrouter_prompt(
             max_tokens=max_tokens
         )
         
-        # Create ModelUsage object
-        usage = ModelUsage(
-            input=cast(int, response.get("usage", {}).get("prompt_tokens", 0)),
-            output=cast(int, response.get("usage", {}).get("completion_tokens", 0)),
-            total=cast(int, response.get("usage", {}).get("total_tokens", 0)),
-            unit="TOKENS"
-        )
+        # Create ModelUsage as a dict since it's a TypedDict
+        usage: ModelUsage = {
+            "input": cast(int, response.get("usage", {}).get("prompt_tokens", 0)),
+            "output": cast(int, response.get("usage", {}).get("completion_tokens", 0)),
+            "total": cast(int, response.get("usage", {}).get("total_tokens", 0)),
+            "unit": "TOKENS",
+            "input_cost": None,
+            "output_cost": None,
+            "total_cost": None
+        }
         
         # Update observation with usage and model info
         langfuse_context.update_current_observation(
