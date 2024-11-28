@@ -29,13 +29,14 @@ Full documentation is available at our [Mintlify docs](./docs/).
   - Genius API
   - OpenRouter API
   - LRCLib API
-  - Langfuse (optional, for monitoring)
+  - Langfuse (for monitoring)
+  - Prefect Cloud (optional, for cloud execution)
 
 ## Quick Start
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/yourusername/song2quiz2.git
+git clone https://github.com/technohippies/song2quiz2.git
 cd song2quiz2
 ```
 
@@ -44,16 +45,35 @@ cd song2quiz2
 pip install -r requirements.txt
 ```
 
-3. Set up environment variables:
+3. Set up environment variables (copy .env.example to .env and fill in your keys):
 ```bash
-export GENIUS_API_KEY="your_key_here"
-export OPENROUTER_API_KEY="your_key_here"
-export LRCLIB_API_KEY="your_key_here"
+cp .env.example .env
+# Edit .env with your API keys:
+# - GENIUS_API_KEY
+# - OPENROUTER_API_KEY
+# - LRCLIB_API_KEY
+# - LANGFUSE_PUBLIC_KEY
+# - LANGFUSE_SECRET_KEY
+# - LANGFUSE_HOST
 ```
 
-4. Run the analysis pipeline:
+4. Configure Prefect (optional for cloud execution):
 ```bash
+# For local execution only:
+prefect server start
+
+# For Prefect Cloud:
+prefect cloud login
+```
+
+5. Run the analysis pipeline:
+```bash
+# Local execution
 python -m src.scripts.run_pipeline
+
+# Cloud execution
+prefect deploy -n song2quiz
+prefect worker start -p song2quiz-pool
 ```
 
 ## Project Structure

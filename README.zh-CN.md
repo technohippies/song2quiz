@@ -29,14 +29,15 @@
   - Genius API
   - OpenRouter API
   - LRCLib API
-  - Langfuse（可选，用于监控）
+  - Langfuse（用于监控）
+  - Prefect Cloud（可选，用于云端执行）
 
 ## 快速开始
 
 1. 克隆仓库：
 ```bash
-git clone https://github.com/yourusername/song2quiz2.git
-cd song2quiz2
+git clone https://github.com/technohippies/song2quiz.git
+cd song2quiz
 ```
 
 2. 安装依赖：
@@ -44,16 +45,35 @@ cd song2quiz2
 pip install -r requirements.txt
 ```
 
-3. 设置环境变量：
+3. 设置环境变量（复制 .env.example 到 .env 并填写你的密钥）：
 ```bash
-export GENIUS_API_KEY="your_key_here"
-export OPENROUTER_API_KEY="your_key_here"
-export LRCLIB_API_KEY="your_key_here"
+cp .env.example .env
+# 在.env中编辑以下API密钥：
+# - GENIUS_API_KEY
+# - OPENROUTER_API_KEY
+# - LRCLIB_API_KEY
+# - LANGFUSE_PUBLIC_KEY
+# - LANGFUSE_SECRET_KEY
+# - LANGFUSE_HOST
 ```
 
-4. 运行分析流程：
+4. 配置 Prefect（云端执行可选）：
 ```bash
+# 仅本地执行：
+prefect server start
+
+# Prefect Cloud：
+prefect cloud login
+```
+
+5. 运行分析流程：
+```bash
+# 本地执行
 python -m src.scripts.run_pipeline
+
+# 云端执行
+prefect deploy -n song2quiz
+prefect worker start -p song2quiz-pool
 ```
 
 ## 项目结构
