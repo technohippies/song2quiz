@@ -6,7 +6,7 @@
 
 ## 文档
 
-完整文档请访问我们的 [Mintlify 文档](https://docs.song2quiz.com)。
+完整文档请访问我们的 [Mintlify 文档](https://song2quiz.mintlify.app)。
 
 ## 快速开始
 
@@ -18,7 +18,7 @@ cd song2quiz
 
 2. 安装依赖：
 ```bash
-pip install -r requirements.txt
+uv pip install -r requirements.txt
 ```
 
 3. 设置环境变量（复制 .env.example 到 .env 并填写你的密钥）：
