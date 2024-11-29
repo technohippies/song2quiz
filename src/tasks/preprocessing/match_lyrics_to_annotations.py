@@ -141,7 +141,7 @@ def match_lyrics_with_annotations(song_path: Path) -> bool:
         # Track matches by type
         matches: Dict[str, Any] = {
             "total": 0,
-            "by_type": {"exact": 0, "fragment": 0, "line": 0}
+            "by_type": {"exact": 0, "fragment": 0, "line": 0},
         }
 
         # Track which annotations have been matched

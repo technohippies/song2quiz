@@ -11,10 +11,10 @@ EXAMPLES = [
                     "type": "IDIOM",
                     "meaning": "Living a risky or hectic lifestyle",
                     "layers": ["LITERAL", "METAPHORICAL"],
-                    "annotation": "Common idiom referring to a fast-paced, risky lifestyle"
+                    "annotation": "Common idiom referring to a fast-paced, risky lifestyle",
                 }
             ]
-        }
+        },
     },
     {
         "text": "Started from the bottom now we here",
@@ -26,7 +26,7 @@ EXAMPLES = [
                     "type": "METAPHOR",
                     "meaning": "Beginning from a difficult or disadvantaged position",
                     "layers": ["METAPHORICAL", "NARRATIVE"],
-                    "annotation": "Describes a journey from hardship to success"
+                    "annotation": "Describes a journey from hardship to success",
                 },
                 {
                     "id": "2",
@@ -34,9 +34,9 @@ EXAMPLES = [
                     "type": "VERNACULAR",
                     "meaning": "Now we have achieved success",
                     "layers": ["LITERAL"],
-                    "annotation": "AAVE construction emphasizing current success"
-                }
+                    "annotation": "AAVE construction emphasizing current success",
+                },
             ]
-        }
-    }
+        },
+    },
 ]

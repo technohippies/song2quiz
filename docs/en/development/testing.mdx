@@ -86,8 +86,8 @@ def test_song_ingestion_flow(mock_get_song_id):
 
 How to Contribute
 Pass tests locally which are in .github/tests.yml (?)
-git push origin feature/setup-ci
 
+ruff format .
 ruff check --fix .
-
 mypy .
+git push origin feature/setup-ci

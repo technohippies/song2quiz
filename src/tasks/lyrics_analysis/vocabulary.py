@@ -28,11 +28,14 @@ async def analyze_fragment(
         )
         logger.info(f"Fragment text: {fragment['text']}")
 
-        response = await cast(Awaitable[Optional[Dict[str, Any]]], complete_openrouter_prompt(
-            formatted_prompt=fragment["text"],
-            system_prompt=SYSTEM_PROMPT,
-            task_type="vocabulary",
-        ))
+        response = await cast(
+            Awaitable[Optional[Dict[str, Any]]],
+            complete_openrouter_prompt(
+                formatted_prompt=fragment["text"],
+                system_prompt=SYSTEM_PROMPT,
+                task_type="vocabulary",
+            ),
+        )
         logger.info(f"OpenRouter Response: {response}")
 
         if response and "choices" in response and response["choices"]:
