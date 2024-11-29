@@ -28,4 +28,4 @@ repos:
       entry: mypy
       language: python
       types: [python]
-      additional_dependencies: ["mypy"]
+      additional_dependencies: ["mypy", "types-requests>=2.31.0"]

@@ -67,7 +67,7 @@ async def analyze_song_parentheticals(song_path: Path) -> Dict[str, Any]:
         return {}
 
 
-async def main():
+async def main() -> None:
     """Main entry point."""
     base_dir = Path(__file__).resolve().parent.parent.parent
     songs_dir = get_songs_dir(base_dir)

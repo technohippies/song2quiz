@@ -1,3 +1,4 @@
+from pathlib import Path
 from unittest.mock import patch
 
 from click.testing import CliRunner
@@ -5,7 +6,7 @@ from click.testing import CliRunner
 from src.scripts.preprocess_song import main as preprocess_cli
 
 
-def test_preprocess_song_cli_with_id(tmp_path):
+def test_preprocess_song_cli_with_id(tmp_path: Path) -> None:
     """Test preprocessing with song ID"""
     runner = CliRunner()
 
@@ -26,7 +27,7 @@ def test_preprocess_song_cli_with_id(tmp_path):
         mock_flow.assert_called_once_with(song_id=2236, base_path=str(tmp_path))
 
 
-def test_preprocess_song_cli_with_name(tmp_path):
+def test_preprocess_song_cli_with_name(tmp_path: Path) -> None:
     """Test preprocessing with song name and artist"""
     runner = CliRunner()
 

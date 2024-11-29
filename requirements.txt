@@ -18,6 +18,7 @@ PyYAML>=6.0.0
 nltk>=3.8.1
 ftfy>=6.1.1
 langfuse
+ruamel.yaml>=0.17.40
 
 # Development dependencies
 pytest>=8.0.0
@@ -25,9 +26,24 @@ pytest-asyncio>=0.24.0
 pytest-cov>=6.0.0
 pyright>=1.1.0
 ruff>=0.1.0
+mypy>=1.9.0
 
 # Type stubs
 types-setuptools>=69.0.0
 types-requests>=2.31.0
 types-PyYAML>=6.0.12
-types-click~=7.1.8
+types-click>=7.1.8
+
+# These packages include their own type hints
+# - pydantic
+# - prefect
+# - python-dotenv
+# - pytest (and pytest-*)
+# - aiohttp
+# - fastapi
+# - httpx
+# - pandas
+# - nltk
+
+# Packages without type hints (configured in mypy.ini):
+# - ftfy

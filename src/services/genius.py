@@ -3,7 +3,7 @@ import logging
 import os
 import time
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional, cast
 
 import requests
 from dotenv import load_dotenv
@@ -45,25 +45,14 @@ class GeniusAPI:
         }
         logger.debug("Initialized GeniusAPI client")
 
-    def _make_request(self, endpoint: str, params: Optional[Dict] = None) -> Dict:
-        """
-        Make rate-limited request to Genius API
-
-        Args:
-            endpoint: API endpoint to request
-            params: Optional query parameters
-
-        Returns:
-            JSON response from the API
-
-        Raises:
-            RequestException: For network or API errors
-        """
-        # Apply rate limiting
-        now = time.time()
-        time_since_last = now - self.last_request_time
-        if time_since_last < self.rate_limit:
-            time.sleep(self.rate_limit - time_since_last)
+    def _make_request(
+        self, endpoint: str, params: Optional[Dict[str, str]] = None
+    ) -> Dict[str, Any]:
+        """Make a rate-limited request to the Genius API."""
+        if self.last_request_time:
+            time_since_last = time.time() - self.last_request_time
+            if time_since_last < self.rate_limit:
+                time.sleep(self.rate_limit - time_since_last)
 
         url = f"{self.base_url}/{endpoint}"
         try:
@@ -73,7 +62,7 @@ class GeniusAPI:
             self.last_request_time = time.time()
 
             response.raise_for_status()
-            return response.json()
+            return cast(Dict[str, Any], response.json())
 
         except Timeout:
             logger.error(f"Request to {endpoint} timed out")
@@ -163,20 +152,29 @@ class GeniusAPI:
             logger.error(f"Error searching for song: {str(e)}")
             return None
 
-    def get_song_annotations(self, song_id: int) -> List[Dict]:
-        """
-        Get raw annotations directly from Genius API
-        Returns the complete, unprocessed API response
+    def get_song_annotations(self, song_id: int) -> List[Dict[str, Any]]:
+        """Get annotations for a song.
+
+        Args:
+            song_id: Genius song ID
+
+        Returns:
+            List of annotation dictionaries
         """
         try:
             data = self._make_request(
-                "referents",
-                params={"song_id": song_id, "text_format": "dom", "per_page": 50},
+                f"songs/{song_id}/referents",
+                params={
+                    "song_id": str(song_id),
+                    "text_format": "dom",
+                    "per_page": "50",
+                },
             )
-            return data.get("response", {}).get("referents", [])
-
+            return cast(
+                List[Dict[str, Any]], data.get("response", {}).get("referents", [])
+            )
         except Exception as e:
-            logger.error(f"Error fetching annotations: {str(e)}")
+            logger.error(f"Failed to get annotations: {e}")
             return []
 
     def save_song_metadata(

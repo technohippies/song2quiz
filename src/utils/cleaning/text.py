@@ -225,7 +225,7 @@ def extract_text_from_dom(dom: Dict[str, Any]) -> str:
     try:
         text: List[str] = []
 
-        def process_node(node: Dict[str, Any]) -> None:
+        def process_node(node: Union[Dict[str, Any], str]) -> None:
             if isinstance(node, str):
                 text.append(node)
             elif isinstance(node, dict):
@@ -405,8 +405,12 @@ def fix_missing_prop(obj_str: str, prop: str) -> str:
     return obj_str + "}"
 
 
-def extract_and_clean_json(content: str) -> Union[Dict[str, Any], str]:
-    """Extract and clean JSON from text content."""
+def clean_json(content: str) -> Union[Dict[str, Any], str]:
+    """Clean and parse JSON content from various formats.
+
+    Returns:
+        Either the parsed JSON as a dict, or the original string if parsing fails
+    """
     if not content:
         return content
 
@@ -416,7 +420,8 @@ def extract_and_clean_json(content: str) -> Union[Dict[str, Any], str]:
 
     # First try to parse as-is since it might be valid JSON
     try:
-        return json.loads(content)
+        parsed: Dict[str, Any] = json.loads(content)
+        return parsed
     except json.JSONDecodeError:
         logger.debug("Initial JSON parse failed, trying to clean")
 
@@ -426,7 +431,8 @@ def extract_and_clean_json(content: str) -> Union[Dict[str, Any], str]:
         try:
             json_str = json_block_match.group(1).strip()
             logger.debug(f"Found JSON block: {json_str}")
-            return json.loads(json_str)
+            parsed_block: Dict[str, Any] = json.loads(json_str)
+            return parsed_block
         except json.JSONDecodeError as e:
             logger.warning(f"Failed to parse JSON from code block: {str(e)}")
 
@@ -436,14 +442,16 @@ def extract_and_clean_json(content: str) -> Union[Dict[str, Any], str]:
         try:
             json_str = json_match.group(1)
             logger.debug(f"Found JSON structure: {json_str}")
-            return json.loads(json_str)
+            parsed_match: Dict[str, Any] = json.loads(json_str)
+            return parsed_match
         except json.JSONDecodeError as e:
             logger.warning(f"Failed to parse JSON structure: {str(e)}")
             # Try one more time with more aggressive cleaning
             try:
                 # Remove any non-JSON characters
                 json_str = re.sub(r'[^\[\]{}",:\s\w\-\'.]', "", json_str)
-                return json.loads(json_str)
+                parsed_cleaned: Dict[str, Any] = json.loads(json_str)
+                return parsed_cleaned
             except json.JSONDecodeError as e:
                 logger.warning(
                     f"Failed to parse JSON even after aggressive cleaning: {str(e)}"
@@ -452,12 +460,11 @@ def extract_and_clean_json(content: str) -> Union[Dict[str, Any], str]:
     # If we couldn't parse as JSON, try to fix common issues in vocabulary responses
     try:
         fixed_json = fix_vocabulary_json(content)
-        return json.loads(fixed_json)
+        parsed_fixed: Dict[str, Any] = json.loads(fixed_json)
+        return parsed_fixed
     except json.JSONDecodeError:
         logger.warning("Failed to fix vocabulary JSON")
 
     logger.debug("=== CLEAN JSON END ===")
     logger.debug(f"Cleaned content: {repr(content)}")
-
-    # If all parsing attempts fail, return the original content
-    return content
+    return content  # Return original content if all parsing attempts fail

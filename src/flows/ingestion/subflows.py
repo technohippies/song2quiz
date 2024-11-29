@@ -2,7 +2,7 @@ import json
 import os
 import shutil
 from pathlib import Path
-from typing import Dict
+from typing import Any, Dict
 
 from prefect import flow, get_run_logger, task
 
@@ -12,7 +12,8 @@ from ...utils.io.paths import ensure_song_dir, get_songs_catalog_path
 
 
 @task(name="Update Song Catalog")
-def update_song_catalog(results: dict, base_path: str):
+def update_song_catalog(results: Dict[str, Any], base_path: str) -> None:
+    """Update the central song catalog with new song metadata."""
     catalog_path = get_songs_catalog_path(base_path)
 
     # Create data directory if it doesn't exist
@@ -43,7 +44,8 @@ def update_song_catalog(results: dict, base_path: str):
 
 
 @task(name="Copy to Songs Directory")
-def copy_to_songs_dir(song_path: str, base_path: str):
+def copy_to_songs_dir(song_path: str, base_path: str) -> None:
+    """Copy song data to the songs directory."""
     logger = get_run_logger()
     if not song_path:
         logger.warning("No song path provided, skipping songs directory copy")
@@ -65,6 +67,7 @@ def copy_to_songs_dir(song_path: str, base_path: str):
 
 @task
 def ensure_song_directory(base_path: str) -> str:
+    """Ensure the songs directory exists and return its path."""
     songs_dir = os.path.join(base_path, "songs")
     os.makedirs(songs_dir, exist_ok=True)
     return songs_dir
@@ -75,7 +78,8 @@ def song_ingestion_flow(
     song_name: str,
     artist_name: str,
     base_path: str = str(Path(__file__).parent.parent.parent.parent),
-) -> Dict:
+) -> Dict[str, Any]:
+    """Ingest a song into the system."""
     logger = get_run_logger()
     logger.info(f"Starting ingestion for {song_name} by {artist_name}")
 
@@ -123,7 +127,7 @@ def song_ingestion_flow(
     if lyrics:
         lyrics_path = song_path / "lyrics.json"
         with open(lyrics_path, "w", encoding="utf-8") as f:
-            json.dump(lyrics.to_dict(), f, ensure_ascii=False, indent=2)
+            json.dump(lyrics, f, ensure_ascii=False, indent=2)
         results["lyrics_path"] = str(lyrics_path)
 
     # Update catalog using the same base_path

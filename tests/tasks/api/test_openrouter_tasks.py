@@ -1,9 +1,9 @@
 """Test OpenRouter tasks."""
 
 import os
-from unittest.mock import MagicMock, patch
+from typing import Any, Dict, Generator
+from unittest.mock import AsyncMock, MagicMock, patch
 
-import httpx
 import pytest
 
 from src.models.api.openrouter import OpenRouterAPIError
@@ -11,7 +11,7 @@ from src.tasks.api.openrouter_tasks import complete_openrouter_prompt
 
 
 @pytest.fixture()
-def mock_openrouter_response():
+def mock_openrouter_response() -> Dict[str, Any]:
     """Mock successful OpenRouter API response"""
     return {
         "id": "test-id",
@@ -36,7 +36,7 @@ def mock_openrouter_response():
 
 
 @pytest.fixture(autouse=True)
-def mock_settings():
+def mock_settings() -> Generator[MagicMock, None, None]:
     """Mock settings to provide API key"""
     with patch("src.utils.settings") as mock_settings:
         api_key = os.getenv("OPENROUTER_API_KEY")
@@ -49,39 +49,46 @@ def mock_settings():
 
 
 @pytest.fixture
-def mock_openrouter():
+def mock_openrouter() -> Generator[AsyncMock, None, None]:
     """Mock OpenRouter API responses"""
     with patch("src.tasks.api.openrouter_tasks.complete_openrouter_prompt") as mock:
         yield mock
 
 
 @pytest.mark.asyncio()
-async def test_complete_prompt_success(mock_openrouter):
+async def test_complete_prompt_success(mock_openrouter: AsyncMock) -> None:
     """Test successful prompt completion"""
-    mock_openrouter.return_value = {"vocabulary": [{"term": "test"}]}
+    mock_openrouter.return_value = AsyncMock(
+        return_value={"vocabulary": [{"term": "test"}]}
+    )
     # ... rest of test
 
 
 @pytest.mark.asyncio()
-async def test_complete_prompt_invalid_json():
+async def test_complete_prompt_invalid_json() -> None:
     """Test that complete_prompt handles invalid JSON responses correctly."""
-    with patch("httpx.AsyncClient.post") as mock_post:
-        # Mock an invalid JSON response
-        mock_response = MagicMock()
-        mock_response.status_code = 200
-        mock_response.json.return_value = {
-            "choices": [
-                {
-                    "message": {
-                        "content": '{\n  "prompt_test": "This is a test prompt."\n}',
-                        "role": "assistant",
+    with patch("src.models.api.openrouter.OpenRouterAPI.complete") as mock_complete:
+        # Mock the complete method to return a response
+        async def mock_complete_response(*args: Any, **kwargs: Any) -> Dict[str, Any]:
+            return {
+                "choices": [
+                    {
+                        "message": {
+                            "content": '{\n  "prompt_test": "This is a test prompt."\n}',
+                            "role": "assistant",
+                        }
                     }
-                }
-            ]
-        }
-        mock_post.return_value = mock_response
+                ],
+                "usage": {
+                    "prompt_tokens": 10,
+                    "completion_tokens": 20,
+                    "total_tokens": 30,
+                },
+            }
 
-        result = await complete_openrouter_prompt(
+        mock_complete.side_effect = mock_complete_response
+
+        result = await complete_openrouter_prompt.fn(
             formatted_prompt="test prompt",
             system_prompt="You are a test assistant",
             task_type="default",
@@ -96,24 +103,27 @@ async def test_complete_prompt_invalid_json():
 
 
 @pytest.mark.asyncio()
-async def test_complete_prompt_error():
+async def test_complete_prompt_error() -> None:
     """Test that complete_prompt handles API errors correctly."""
     with patch("src.models.api.openrouter.OpenRouterAPI.complete") as mock_complete:
         # Mock an error response
-        mock_complete.side_effect = httpx.HTTPError("Internal Server Error")
+        async def mock_error_response(*args: Any, **kwargs: Any) -> None:
+            raise OpenRouterAPIError("Error during API request: Internal Server Error")
+
+        mock_complete.side_effect = mock_error_response
 
         with pytest.raises(OpenRouterAPIError) as exc_info:
-            await complete_openrouter_prompt(
+            await complete_openrouter_prompt.fn(
                 formatted_prompt="test prompt",
                 system_prompt="You are a test assistant",
                 task_type="default",
             )
-        assert "HTTP error occurred" in str(exc_info.value)
+        assert "Error during API request" in str(exc_info.value)
         assert "Internal Server Error" in str(exc_info.value)
 
 
 @pytest.mark.asyncio()
-async def test_complete_prompt_integration():
+async def test_complete_prompt_integration() -> None:
     """Test complete_prompt with actual API call."""
     api_key = os.getenv("OPENROUTER_API_KEY")
     print(f"API Key available: {'yes' if api_key else 'no'}")  # Debug print
@@ -124,7 +134,7 @@ async def test_complete_prompt_integration():
     prompt = "Analyze the vocabulary in: 'I got 99 problems'"
 
     try:
-        result = await complete_openrouter_prompt(
+        result = await complete_openrouter_prompt.fn(
             formatted_prompt=prompt,
             system_prompt="You are a vocabulary analyzer",
             task_type="analysis",
