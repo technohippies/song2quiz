@@ -40,7 +40,7 @@ jobs:
     - name: Type check with mypy
       run: |
         . .venv/bin/activate
-        uv pip install mypy types-all
+        uv pip install mypy
         .venv/bin/mypy .
 
   test:
