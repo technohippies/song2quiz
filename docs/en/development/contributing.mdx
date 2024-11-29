@@ -1,0 +1,60 @@
+# Contributing
+
+## Development Workflow
+
+### Local Development Setup
+
+1. Install pre-commit hooks:
+```bash
+uv pip install pre-commit
+pre-commit install
+```
+
+2. The pre-commit hooks will:
+- Format code with ruff
+- Lint code with ruff
+- Run type checks with mypy
+- Keep dependencies up to date with uv
+
+### Before Pushing to GitHub
+
+Run the full test suite:
+```bash
+./scripts/test_ci.sh
+```
+
+This script:
+- Creates a fresh virtual environment
+- Installs all dependencies
+- Runs comprehensive tests
+- Matches the GitHub CI environment
+
+### Code Quality Checks
+
+Pre-commit handles quick checks:
+```bash
+# Automatic on commit, or run manually:
+pre-commit run --all-files
+```
+
+Full CI checks:
+```bash
+./scripts/test_ci.sh
+```
+
+### Best Practices
+
+1. **Dependencies**:
+   - Use uv for dependency management
+   - Keep requirements.txt up to date
+   - Run full test suite after dependency changes
+
+2. **Testing**:
+   - Write tests for new features
+   - Mock external API calls
+   - Use temporary directories for file operations
+
+3. **Code Style**:
+   - Follow ruff formatting
+   - Add type hints
+   - Keep functions focused and small
