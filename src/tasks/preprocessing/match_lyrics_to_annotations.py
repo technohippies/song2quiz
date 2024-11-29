@@ -5,7 +5,7 @@ import json
 import logging
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 from prefect import task
 
@@ -127,7 +127,7 @@ def match_lyrics_with_annotations(song_path: Path) -> bool:
             return False
 
         with open(lyrics_path) as f:
-            lyrics_data = json.load(f)
+            lyrics_data: Dict[str, Any] = json.load(f)
 
         # Load cleaned annotations
         annotations_path = song_path / "annotations_cleaned.json"
@@ -136,17 +136,28 @@ def match_lyrics_with_annotations(song_path: Path) -> bool:
             return False
 
         with open(annotations_path) as f:
-            annotations = json.load(f)
+            annotations: List[Dict[str, Any]] = json.load(f)
 
         # Track matches by type
-        matches = {"total": 0, "by_type": {"exact": 0, "fragment": 0, "line": 0}}
+        matches: Dict[str, Any] = {
+            "total": 0,
+            "by_type": {"exact": 0, "fragment": 0, "line": 0}
+        }
 
         # Track which annotations have been matched
-        matched_annotation_ids = set()
-        lyrics_with_annotations = []
+        matched_annotation_ids: set[str] = set()
+        lyrics_with_annotations: List[Dict[str, Any]] = []
 
-        for line in lyrics_data.get("timestamped_lines", []):
-            line_text = line["text"].strip()
+        timestamped_lines = lyrics_data.get("timestamped_lines", [])
+        if not isinstance(timestamped_lines, list):
+            logger.error("Invalid timestamped_lines format")
+            return False
+
+        for line in timestamped_lines:
+            if not isinstance(line, dict):
+                continue
+
+            line_text = line.get("text", "").strip()
             annotation, match_type = find_matching_annotation(line_text, annotations)
 
             if annotation:
@@ -159,7 +170,7 @@ def match_lyrics_with_annotations(song_path: Path) -> bool:
 
             annotated_line = {
                 "id": get_line_id(line_text),
-                "timestamp": line["timestamp"],
+                "timestamp": line.get("timestamp"),
                 "text": line_text,
                 "annotation": annotation["annotation_text"] if annotation else None,
                 "fragment": annotation["fragment"] if annotation else None,

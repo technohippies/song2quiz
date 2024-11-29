@@ -11,36 +11,36 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
-    
+
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
         python-version: "3.12"
-        
+
     - name: Set up uv
       uses: astral-sh/setup-uv@v4
-        
+
     - name: Create venv and install dependencies
       run: |
         uv venv
         . .venv/bin/activate
         uv pip install -r requirements.txt
-        
+
     - name: Lint with Ruff
       run: |
         . .venv/bin/activate
         uv pip install ruff
         .venv/bin/ruff check .
-        
+
     - name: Format with Ruff
       run: |
         . .venv/bin/activate
         .venv/bin/ruff format --check .
-        
+
     - name: Type check with mypy
       run: |
         . .venv/bin/activate
-        uv pip install mypy
+        uv pip install mypy types-all
         .venv/bin/mypy .
 
   test:
@@ -52,22 +52,22 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
-    
+
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v5
       with:
         python-version: ${{ matrix.python-version }}
-        
+
     - name: Set up uv
       uses: astral-sh/setup-uv@v4
-        
+
     - name: Create venv and install dependencies
       run: |
         uv venv
         . .venv/bin/activate
         uv pip install -r requirements.txt
         uv pip install pytest pytest-asyncio pytest-cov
-        
+
     - name: Run tests
       env:
         OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}

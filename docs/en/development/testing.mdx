@@ -60,10 +60,10 @@ def test_ingest_song_cli_success(tmp_path):
     # Arrange
     song = "Test Song"
     artist = "Test Artist"
-    
+
     # Act
     result = runner.invoke(ingest_cli, ["--song", song, "--artist", artist])
-    
+
     # Assert
     assert result.exit_code == 0
 ```
@@ -76,10 +76,18 @@ def test_song_ingestion_flow(mock_get_song_id):
     """Test song ingestion flow with mocked Genius API."""
     # Setup mock
     mock_get_song_id.return_value = "12345"
-    
+
     # Run test
     result = song_ingestion_flow(song="Test", artist="Artist")
-    
+
     # Verify
     assert result["id"] == "12345"
 ```
+
+How to Contribute
+Pass tests locally which are in .github/tests.yml (?)
+git push origin feature/setup-ci
+
+ruff check --fix .
+
+mypy .

@@ -2,7 +2,7 @@
 
 # Standard library imports
 import json
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, patch
 
 # Third-party imports
 import pytest
@@ -28,29 +28,55 @@ def mock_openrouter_response():
 
 
 @pytest.mark.asyncio()
-async def test_analyze_fragment_single_unit(mock_openrouter):
+async def test_analyze_fragment_single_unit():
     """Test analyzing a single semantic unit"""
-    mock_openrouter.return_value = {
-        "choices": [
-            {
-                "message": {
-                    "content": '{"semantic_units": [{"id": "1", "text": "test"}]}',
-                    "role": "assistant",
+    with patch(
+        "src.tasks.lyrics_analysis.semantic_units.complete_openrouter_prompt",
+        new_callable=AsyncMock,
+    ) as mock_openrouter:
+        # Setup mock response with matching text
+        mock_openrouter.return_value = {
+            "choices": [
+                {
+                    "message": {
+                        "content": '{"semantic_units": [{"id": "1", "text": "test line"}]}',
+                        "role": "assistant",
+                    }
                 }
-            }
-        ]
-    }
-    # ... rest of test
+            ]
+        }
+
+        # Call the function with test data
+        fragment = {"text": "test line"}
+        result = await analyze_fragment(fragment, 1, 1)
+
+        # Verify the result
+        assert result is not None
+        assert "choices" in result
+        assert len(result["choices"]) == 1
+        assert "message" in result["choices"][0]
+        assert "content" in result["choices"][0]["message"]
+
+        # Parse and verify the content
+        content = json.loads(result["choices"][0]["message"]["content"])
+        assert "semantic_units" in content
+        assert len(content["semantic_units"]) == 1
+        assert content["semantic_units"][0]["id"] == "1"
+        assert content["semantic_units"][0]["text"] == "test line"
+
+        # Verify the mock was called correctly
+        mock_openrouter.assert_called_once()
 
 
 @pytest.mark.asyncio()
 async def test_analyze_fragment_multiple_units():
     """Test that analyze_fragment correctly processes a line with multiple semantic units."""
-    with patch("httpx.Client.post") as mock_post:
-        # Mock the HTTP response
-        mock_response = MagicMock()
-        mock_response.status_code = 200
-        mock_response.json.return_value = {
+    with patch(
+        "src.tasks.lyrics_analysis.semantic_units.complete_openrouter_prompt",
+        new_callable=AsyncMock,
+    ) as mock_complete:
+        # Mock the API response
+        mock_complete.return_value = {
             "choices": [
                 {
                     "message": {
@@ -81,7 +107,6 @@ async def test_analyze_fragment_multiple_units():
                 }
             ]
         }
-        mock_post.return_value = mock_response
 
         fragment = {"text": "what she order? Fish fillet"}
         result = await analyze_fragment(fragment, 1, 1)

@@ -46,7 +46,7 @@ class OpenRouterClient:
         }
 
         self.task_type = task_type or "default"
-        self._failed_models = set()
+        self._failed_models: set[str] = set()
         logger.debug(f"Task type: {self.task_type}")
 
     def _select_model(self, fallback_model: Optional[str] = None) -> str:

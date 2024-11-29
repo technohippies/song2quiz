@@ -1,73 +1,42 @@
-"""Example inputs and outputs for semantic units analysis."""
+"""Example semantic unit analyses for prompting."""
 
 EXAMPLES = [
-    # Example 1: Single semantic unit
     {
-        "input": "Audemars that's losing time",
-        "output": {
+        "text": "I'm living life in the fast lane",
+        "analysis": {
             "semantic_units": [
                 {
-                    "id": "a4fd2be2",
-                    "text": "Audemars that's losing time",
-                    "type": "CULTURAL_REFERENCE",
-                    "meaning": "A luxury watch that is not keeping accurate time",
-                    "layers": ["LITERAL", "CULTURAL", "FIGURATIVE"],
+                    "id": "1",
+                    "text": "living life in the fast lane",
+                    "type": "IDIOM",
+                    "meaning": "Living a risky or hectic lifestyle",
+                    "layers": ["LITERAL", "METAPHORICAL"],
+                    "annotation": "Common idiom referring to a fast-paced, risky lifestyle"
                 }
             ]
-        },
+        }
     },
-    # Example 2: Two semantic units (question and answer)
     {
-        "input": "what she order? Fish fillet?",
-        "output": {
+        "text": "Started from the bottom now we here",
+        "analysis": {
             "semantic_units": [
                 {
-                    "id": "b5ef3cd1",
-                    "text": "what she order?",
-                    "type": "PHRASE",
-                    "meaning": "Questioning what a woman ordered at a restaurant",
-                    "layers": ["LITERAL", "CULTURAL"],
-                },
-                {
-                    "id": "c6gh4ef2",
-                    "text": "Fish fillet?",
-                    "type": "CULTURAL_REFERENCE",
-                    "meaning": "A basic menu item at fast-food restaurants",
-                    "layers": ["LITERAL", "CULTURAL", "PERSONAL"],
-                },
-            ]
-        },
-    },
-    # Example 3: Three semantic units with connecting words shown in relationship
-    {
-        "input": "Crown on my head but I'm king of the hill, every day I'm grinding I'm on to the mill",
-        "output": {
-            "semantic_units": [
-                {
-                    "id": "d7hi5fg3",
-                    "text": "Crown on my head",
+                    "id": "1",
+                    "text": "Started from the bottom",
                     "type": "METAPHOR",
-                    "meaning": "Wearing a crown, symbol of royalty",
-                    "layers": ["LITERAL", "FIGURATIVE"],
+                    "meaning": "Beginning from a difficult or disadvantaged position",
+                    "layers": ["METAPHORICAL", "NARRATIVE"],
+                    "annotation": "Describes a journey from hardship to success"
                 },
                 {
-                    "id": "e8ij6gh4",
-                    "text": "I'm king of the hill",
-                    "type": "IDIOM",
-                    "meaning": "Being at the top position or most dominant",
-                    "layers": ["LITERAL", "FIGURATIVE", "CULTURAL"],
-                },
-                {
-                    "id": "f9jk7hi5",
-                    "text": "every day I'm grinding I'm on to the mill",
-                    "type": "DOUBLE_MEANING",
-                    "meaning": "Constantly working hard",
-                    "layers": ["LITERAL", "FIGURATIVE", "CULTURAL"],
-                },
+                    "id": "2",
+                    "text": "now we here",
+                    "type": "VERNACULAR",
+                    "meaning": "Now we have achieved success",
+                    "layers": ["LITERAL"],
+                    "annotation": "AAVE construction emphasizing current success"
+                }
             ]
-        },
-    },
+        }
+    }
 ]
-
-# Note: Connecting words like 'but', 'and', 'so' are not included in the semantic units themselves.
-# The relationships between units will be documented in manually added annotations.

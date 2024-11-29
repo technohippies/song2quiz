@@ -27,7 +27,7 @@ class LRCLibAPI:
         """
         self.base_url = "https://lrclib.net/api"
         self.rate_limit = rate_limit
-        self.last_request_time = 0
+        self.last_request_time: float = 0
 
         self.headers = {"Accept": "application/json", "User-Agent": "song2quiz/1.0"}
         logger.debug("Initialized LRCLibAPI client")

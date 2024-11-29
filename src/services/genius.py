@@ -31,7 +31,7 @@ class GeniusAPI:
         """
         self.base_url = "https://api.genius.com"
         self.rate_limit = rate_limit
-        self.last_request_time = 0
+        self.last_request_time: float = 0
 
         api_token = os.getenv("GENIUS_API_TOKEN")
         if not api_token:
