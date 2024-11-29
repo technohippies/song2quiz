@@ -1,5 +1,6 @@
 """Test OpenRouter tasks."""
 
+import json
 import os
 from unittest.mock import MagicMock, patch
 
@@ -67,14 +68,14 @@ async def test_complete_prompt_success(mock_openrouter):
 @pytest.mark.asyncio()
 async def test_complete_prompt_invalid_json():
     """Test that complete_prompt handles invalid JSON responses correctly."""
-    with patch("httpx.Client.post") as mock_post:
+    with patch("httpx.AsyncClient.post") as mock_post:
         # Mock an invalid JSON response
         mock_response = MagicMock()
         mock_response.status_code = 200
         mock_response.json.return_value = {
             "choices": [{
                 "message": {
-                    "content": "Invalid JSON {test: 'value'",
+                    "content": "{\n  \"prompt_test\": \"This is a test prompt.\"\n}",
                     "role": "assistant"
                 }
             }]
@@ -91,19 +92,16 @@ async def test_complete_prompt_invalid_json():
         assert len(result["choices"]) > 0
         assert "message" in result["choices"][0]
         assert "content" in result["choices"][0]["message"]
-        assert result["choices"][0]["message"]["content"] == "Invalid JSON {test: 'value'"
+        expected_content = "{\n  \"prompt_test\": \"This is a test prompt.\"\n}"
+        assert result["choices"][0]["message"]["content"] == expected_content
 
 
 @pytest.mark.asyncio()
 async def test_complete_prompt_error():
     """Test that complete_prompt handles API errors correctly."""
-    with patch("httpx.Client.post") as mock_post:
+    with patch("src.models.api.openrouter.OpenRouterAPI.complete") as mock_complete:
         # Mock an error response
-        mock_response = MagicMock()
-        mock_response.status_code = 500
-        mock_response.text = "Internal Server Error"
-        mock_response.raise_for_status.side_effect = httpx.HTTPError("Internal Server Error")
-        mock_post.return_value = mock_response
+        mock_complete.side_effect = httpx.HTTPError("Internal Server Error")
 
         with pytest.raises(OpenRouterAPIError) as exc_info:
             await complete_openrouter_prompt(
@@ -111,7 +109,7 @@ async def test_complete_prompt_error():
                 system_prompt="You are a test assistant",
                 task_type="default"
             )
-        assert "HTTP error" in str(exc_info.value)
+        assert "HTTP error occurred" in str(exc_info.value)
         assert "Internal Server Error" in str(exc_info.value)
 
 

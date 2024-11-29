@@ -1,7 +1,9 @@
 import os
 import sys
-import pytest
 from pathlib import Path
+from unittest.mock import Mock
+
+import pytest
 from dotenv import load_dotenv
 from prefect.testing.utilities import prefect_test_harness
 
@@ -23,7 +25,7 @@ def event_loop():
 @pytest.fixture(autouse=True, scope="session")
 def prefect_test_fixture():
     with prefect_test_harness():
-        yield 
+        yield
 
 def pytest_configure(config):
     """Configure custom markers"""
@@ -47,3 +49,18 @@ def pytest_runtest_setup(item):
     """Skip integration tests if OPENROUTER_API_KEY is not set"""
     if "integration" in item.keywords and not os.getenv("OPENROUTER_API_KEY"):
         pytest.skip("OPENROUTER_API_KEY not set")
+
+@pytest.fixture
+def mock_genius(monkeypatch):
+    """Mock Genius API responses"""
+    mock = Mock()
+    mock.return_value = {"id": 1234, "song_path": "data/songs/1234"}
+    monkeypatch.setattr("src.services.genius.GeniusAPI.search_song", mock)
+    return mock
+
+@pytest.fixture
+def mock_openrouter(monkeypatch):
+    """Mock OpenRouter API responses"""
+    mock = Mock()
+    monkeypatch.setattr("src.services.openrouter.OpenRouterClient.complete", mock)
+    return mock

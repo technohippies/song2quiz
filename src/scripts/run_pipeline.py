@@ -1,10 +1,9 @@
 """Run the complete pipeline for a song."""
-import asyncio
 import logging
 from pathlib import Path
 from typing import Optional
-
 import click
+import asyncio
 
 import src.flows.generation.main
 import src.flows.ingestion.subflows
@@ -44,7 +43,8 @@ def run_pipeline(
     song_id: Optional[str] = None,
     steps: str = "all",
     batch_size: int = 15,
-    max_retries: int = 3
+    max_retries: int = 3,
+    data_dir: str = "data"
 ) -> None:
     """Run the complete pipeline for a song.
 
@@ -55,6 +55,7 @@ def run_pipeline(
         steps: Pipeline steps to run ("all", "ingest", "preprocess", "analyze", "generate")
         batch_size: Batch size for analysis tasks
         max_retries: Maximum number of retries for failed tasks
+        data_dir: Directory containing song data
     """
     try:
         # Validate parameters
@@ -76,7 +77,7 @@ def run_pipeline(
                 return
 
         # Set up paths
-        song_path = Path("data/songs") / str(song_id) if song_id else None
+        song_path = Path(data_dir) / "songs" / str(song_id) if song_id else None
 
         # Run ingestion if needed
         if steps in ["all", "ingest"]:
@@ -87,7 +88,7 @@ def run_pipeline(
             result = src.flows.ingestion.subflows.song_ingestion_flow(
                 song_name=song,
                 artist_name=artist,
-                base_path=str(Path.cwd())
+                base_path=str(Path(data_dir))
             )
             if not result or not result.get("song_path"):
                 print("\n❌ Ingestion failed")
@@ -115,7 +116,7 @@ def run_pipeline(
 
             success = src.flows.preprocessing.subflows.process_song_annotations_flow(
                 song_id=song_id_int,
-                base_path=str(Path.cwd())
+                base_path=str(Path(data_dir))
             )
             if not success:
                 print("\n❌ Preprocessing failed")
@@ -161,7 +162,7 @@ def cli_group():
     default="data",
     help="Directory containing song data",
 )
-def run_cli(
+def run_pipeline_cli(
     artist: Optional[str] = None,
     song: Optional[str] = None,
     song_id: Optional[str] = None,
@@ -171,7 +172,7 @@ def run_cli(
     data_dir: str = "data",
 ) -> None:
     """Run the complete pipeline for a song."""
-    run_pipeline(artist, song, song_id, steps, batch_size, max_retries)
+    run_pipeline(artist, song, song_id, steps, batch_size, max_retries, data_dir)
 
 cli = cli_group  # For backwards compatibility with tests
 

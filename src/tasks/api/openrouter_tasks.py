@@ -1,9 +1,12 @@
-from prefect import task
-from typing import Dict, Any, Optional, cast
 import logging
-from src.models.api.openrouter import OpenRouterAPI
-from langfuse.decorators import observe, langfuse_context
+from typing import Any, Dict, Optional, cast
+
+import httpx
+from langfuse.decorators import langfuse_context, observe
 from langfuse.model import ModelUsage
+from prefect import task
+
+from src.models.api.openrouter import OpenRouterAPI, OpenRouterAPIError
 
 logger = logging.getLogger(__name__)
 
@@ -21,20 +24,26 @@ async def complete_openrouter_prompt(
         client = OpenRouterAPI()
         model = client._select_model(task_type)
         if not model:
-            raise ValueError(f"No model found for task type: {task_type}")
-            
+            raise ValueError(f"No model found for task type: {task_type}") from None
+
         messages = [
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": formatted_prompt}
         ]
-        
-        response = await client.complete(
-            messages=messages,
-            task_type=task_type,
-            temperature=temperature,
-            max_tokens=max_tokens
-        )
-        
+
+        async with client:
+            try:
+                response = await client.complete(
+                    messages=messages,
+                    task_type=task_type,
+                    temperature=temperature,
+                    max_tokens=max_tokens
+                )
+            except httpx.HTTPError as e:
+                raise OpenRouterAPIError(f"HTTP error occurred: {str(e)}")  # noqa: B904 from e
+
+        logger.info(f"OpenRouter API Response: {response}")
+
         # Create ModelUsage as a dict since it's a TypedDict
         usage: ModelUsage = {
             "input": cast(int, response.get("usage", {}).get("prompt_tokens", 0)),
@@ -45,7 +54,7 @@ async def complete_openrouter_prompt(
             "output_cost": None,
             "total_cost": None
         }
-        
+
         # Update observation with usage and model info
         langfuse_context.update_current_observation(
             model=model,
@@ -63,12 +72,12 @@ async def complete_openrouter_prompt(
                 "response_format": "json"
             }
         )
-        
+
         return response
-            
+
     except Exception as e:
         langfuse_context.update_current_observation(
             level="ERROR",
             metadata={"error": str(e)}
         )
-        raise
+        raise OpenRouterAPIError(f"Error completing OpenRouter prompt: {str(e)}") from e
