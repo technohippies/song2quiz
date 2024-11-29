@@ -4,15 +4,20 @@ from unittest.mock import patch
 
 from click.testing import CliRunner
 
-from src.scripts.ingest_song import cli
+from src.scripts.ingest_song import ingest_song_cli as cli
 
 
 @patch('src.flows.ingestion.subflows.song_ingestion_flow')
 def test_ingest_song_cli_success(mock_flow):
     """Test successful CLI invocation"""
     runner = CliRunner()
-    result = runner.invoke(cli, ['--song', 'Yesterday', '--artist', 'The Beatles'])
+    # Mock a successful response
+    mock_flow.return_value = {
+        "song_path": "data/songs/2236",
+        "id": 2236
+    }
 
+    result = runner.invoke(cli, ['--song', 'Yesterday', '--artist', 'The Beatles'])
     assert result.exit_code == 0
     mock_flow.assert_called_once_with(
         song_name='Yesterday',
@@ -31,7 +36,6 @@ def test_ingest_song_cli_failure(tmp_path):
         result = runner.invoke(
             cli,
             [
-                "run",
                 "--song",
                 "Nonexistent",
                 "--artist",
@@ -40,10 +44,5 @@ def test_ingest_song_cli_failure(tmp_path):
                 str(tmp_path),
             ],
         )
-
-        print("\nTest Debug Output:")
-        print(f"Exit Code: {result.exit_code}")
-        print(f"Output: {result.output}")
-        print(f"Exception: {result.exception}")
 
         assert result.exit_code != 0
