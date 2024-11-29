@@ -30,5 +30,4 @@ ruff>=0.1.0
 types-setuptools>=69.0.0
 types-requests>=2.31.0
 types-PyYAML>=6.0.12
-types-aiohttp>=3.9.1
 types-click>=8.0.0
