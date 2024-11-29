@@ -4,9 +4,10 @@ import asyncio
 import json
 import logging
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Awaitable, Dict, List, Optional
 
 from prefect import get_run_logger, task
+from typing_extensions import cast
 
 from src.prompts.lyrics_analysis.vocabulary.system import SYSTEM_PROMPT
 from src.tasks.api.openrouter_tasks import complete_openrouter_prompt
@@ -27,11 +28,11 @@ async def analyze_fragment(
         )
         logger.info(f"Fragment text: {fragment['text']}")
 
-        response = await complete_openrouter_prompt(
+        response = await cast(Awaitable[Optional[Dict[str, Any]]], complete_openrouter_prompt(
             formatted_prompt=fragment["text"],
             system_prompt=SYSTEM_PROMPT,
             task_type="vocabulary",
-        )
+        ))
         logger.info(f"OpenRouter Response: {response}")
 
         if response and "choices" in response and response["choices"]:

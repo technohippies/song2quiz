@@ -110,7 +110,7 @@ def extract_parentheticals(text: str) -> Tuple[str, List[Dict[str, Any]]]:
 
         while "(" in clean_text:
             # Find the next outermost pair
-            stack = []
+            stack: list[int] = []
             start = -1
             found_pair = False
 
@@ -223,7 +223,7 @@ def clean_fragment(fragment: str) -> str:
 def extract_text_from_dom(dom: Dict[str, Any]) -> str:
     """Extract plain text from Genius DOM structure, preserving newlines."""
     try:
-        text = []
+        text: List[str] = []
 
         def process_node(node: Dict[str, Any]) -> None:
             if isinstance(node, str):
