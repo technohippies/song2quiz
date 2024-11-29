@@ -2,6 +2,7 @@
 
 import asyncio
 import logging
+from typing import Any, Dict, Optional
 
 from prefect import flow
 
@@ -12,7 +13,7 @@ logger = logging.getLogger(__name__)
 
 
 @flow(name="test_semantic_units")
-async def test_semantic_units(song_id: str):
+async def test_semantic_units(song_id: str) -> Optional[Dict[str, Any]]:
     """Test semantic units analysis with high concurrency."""
     song_path = f"data/songs/{song_id}"
     logger.info(f"🚀 Starting semantic units analysis for {song_path}")
@@ -21,7 +22,8 @@ async def test_semantic_units(song_id: str):
     if result:
         logger.info("✅ Analysis complete!")
         logger.info(f"📊 Processed {len(result['semantic_units_analysis'])} units")
-    return result
+        return dict(result)
+    return None
 
 
 if __name__ == "__main__":

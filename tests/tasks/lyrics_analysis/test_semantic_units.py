@@ -2,6 +2,7 @@
 
 # Standard library imports
 import json
+from typing import Any, Dict
 from unittest.mock import AsyncMock, patch
 
 # Third-party imports
@@ -12,7 +13,7 @@ from src.tasks.lyrics_analysis.semantic_units import analyze_fragment
 
 
 @pytest.fixture
-def mock_openrouter_response():
+def mock_openrouter_response() -> Dict[str, Any]:
     """Mock OpenRouter API response for semantic units"""
     return {
         "choices": [
@@ -28,7 +29,7 @@ def mock_openrouter_response():
 
 
 @pytest.mark.asyncio()
-async def test_analyze_fragment_single_unit():
+async def test_analyze_fragment_single_unit() -> None:
     """Test analyzing a single semantic unit"""
     with patch(
         "src.tasks.lyrics_analysis.semantic_units.complete_openrouter_prompt",
@@ -69,7 +70,7 @@ async def test_analyze_fragment_single_unit():
 
 
 @pytest.mark.asyncio()
-async def test_analyze_fragment_multiple_units():
+async def test_analyze_fragment_multiple_units() -> None:
     """Test that analyze_fragment correctly processes a line with multiple semantic units."""
     with patch(
         "src.tasks.lyrics_analysis.semantic_units.complete_openrouter_prompt",
@@ -128,7 +129,7 @@ async def test_analyze_fragment_multiple_units():
 
 
 @pytest.mark.asyncio()
-async def test_analyze_fragment_rate_limit():
+async def test_analyze_fragment_rate_limit() -> None:
     """Test that analyze_fragment handles rate limit errors with retries."""
     with patch(
         "src.tasks.lyrics_analysis.semantic_units.complete_openrouter_prompt",
@@ -176,7 +177,7 @@ async def test_analyze_fragment_rate_limit():
 
 
 @pytest.mark.asyncio()
-async def test_analyze_fragment_error_handling():
+async def test_analyze_fragment_error_handling() -> None:
     """Test that analyze_fragment handles various error cases."""
     with patch(
         "src.tasks.lyrics_analysis.semantic_units.complete_openrouter_prompt",

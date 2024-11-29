@@ -3,6 +3,7 @@
 import asyncio
 import json
 import logging
+from typing import Any, Dict, Optional
 
 from src.services.openrouter import OpenRouterClient
 
@@ -11,7 +12,7 @@ logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
 
-async def test_api():
+async def test_api() -> Optional[Dict[str, Any]]:
     """Test a simple API call."""
     try:
         client = OpenRouterClient(task_type="vocabulary")

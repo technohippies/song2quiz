@@ -1,3 +1,5 @@
+from pathlib import Path
+from typing import Any
 from unittest.mock import AsyncMock, patch
 
 from click.testing import CliRunner
@@ -5,7 +7,7 @@ from click.testing import CliRunner
 from src.scripts.run_pipeline import run_pipeline_cli as cli
 
 
-def test_run_pipeline_cli_ingest_only(tmp_path):
+def test_run_pipeline_cli_ingest_only(tmp_path: Path) -> None:
     """Test running only ingestion step"""
     runner = CliRunner()
 
@@ -38,7 +40,7 @@ def test_run_pipeline_cli_ingest_only(tmp_path):
         mock_ingest.assert_called_once()
 
 
-def test_run_pipeline_cli_all_steps(tmp_path, mock_genius):
+def test_run_pipeline_cli_all_steps(tmp_path: Path, mock_genius: Any) -> None:
     """Test running full pipeline"""
     runner = CliRunner()
 

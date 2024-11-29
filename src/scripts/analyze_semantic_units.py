@@ -4,6 +4,7 @@ import asyncio
 import logging
 import sys
 from pathlib import Path
+from typing import Any, Dict
 
 from src.flows.generation.main import main
 from src.utils.settings import settings
@@ -24,10 +25,9 @@ logger.info(f"Secret key set: {bool(settings.LANGFUSE_SECRET_KEY)}")
 logger.info(f"Host: {settings.LANGFUSE_HOST}")
 
 
-async def run_analysis(song_id: str):
-    """Run semantic units analysis on a song."""
+async def analyze_song_semantic_units(song_path: Path) -> Dict[str, Any]:
+    """Analyze semantic units in a song's lyrics."""
     try:
-        song_path = f"data/songs/{song_id}"
         if not Path(song_path).exists():
             logger.error(f"❌ Song directory does not exist: {song_path}")
             sys.exit(1)
@@ -38,15 +38,17 @@ async def run_analysis(song_id: str):
             )
             sys.exit(1)
 
-        result = await main(song_path)
+        result = await main(str(song_path))
         if result:
             logger.info("✓ Analysis completed successfully")
+            return {"success": True, "result": result}
         else:
             logger.error("❌ Analysis failed")
+            return {"success": False, "error": "Analysis failed"}
 
     except Exception as e:
         logger.error(f"❌ Error running analysis: {str(e)}")
-        sys.exit(1)
+        return {"success": False, "error": str(e)}
 
 
 if __name__ == "__main__":
@@ -56,4 +58,4 @@ if __name__ == "__main__":
         sys.exit(1)
 
     song_id = sys.argv[1]
-    asyncio.run(run_analysis(song_id))
+    asyncio.run(analyze_song_semantic_units(Path(f"data/songs/{song_id}")))

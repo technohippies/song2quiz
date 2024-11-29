@@ -14,7 +14,7 @@ from src.flows.ingestion.subflows import song_ingestion_flow
     help="Base path for data storage",
     type=click.Path(exists=True, file_okay=False, dir_okay=True),
 )
-def ingest_song_cli(artist: str, song: str, data_dir: str):
+def ingest_song_cli(artist: str, song: str, data_dir: str) -> None:
     """Ingest a song into the system."""
     print(f"Ingesting {song} by {artist}...")
     results = song_ingestion_flow(

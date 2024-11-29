@@ -1,4 +1,5 @@
 import json
+from pathlib import Path
 
 import pytest
 from prefect.logging.loggers import disable_run_logger
@@ -7,9 +8,9 @@ from src.tasks.preprocessing.text_cleaning import process_annotations
 
 
 @pytest.fixture
-def mock_song_path(tmp_path):
+def mock_song_path(tmp_path: Path) -> Path:
     """Create a temporary song directory with mock annotation data"""
-    song_dir = tmp_path / "test_song"
+    song_dir: Path = tmp_path / "test_song"
     song_dir.mkdir()
 
     # Create mock annotations file
@@ -41,7 +42,7 @@ def mock_song_path(tmp_path):
     return song_dir
 
 
-def test_process_annotations_success(mock_song_path):
+def test_process_annotations_success(mock_song_path: Path) -> None:
     """Test successful processing of annotations"""
     with disable_run_logger():
         result = process_annotations.fn(mock_song_path)
@@ -61,7 +62,7 @@ def test_process_annotations_success(mock_song_path):
     assert "annotation_text" in cleaned_data[0]
 
 
-def test_process_annotations_no_input_file(tmp_path):
+def test_process_annotations_no_input_file(tmp_path: Path) -> None:
     """Test behavior when input file doesn't exist"""
     empty_dir = tmp_path / "empty_song"
     empty_dir.mkdir()

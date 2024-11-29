@@ -11,7 +11,7 @@ from src.utils.settings import settings
 logger = logging.getLogger(__name__)
 
 
-def register_models():
+def register_models() -> None:
     """Register OpenRouter models with Langfuse."""
     try:
         client = httpx.Client(

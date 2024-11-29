@@ -45,11 +45,16 @@ class OpenRouterAPI:
         self.max_retries = 3
         self.base_delay = 1  # Start with 1 second delay
 
-    async def __aenter__(self):
+    async def __aenter__(self) -> "OpenRouterAPI":
         """Enter async context."""
         return self
 
-    async def __aexit__(self, exc_type, exc_val, exc_tb):
+    async def __aexit__(
+        self,
+        exc_type: Optional[type],
+        exc_val: Optional[Exception],
+        exc_tb: Optional[Any],
+    ) -> None:
         """Exit async context."""
         await self.client.aclose()
 
@@ -142,7 +147,7 @@ class OpenRouterAPI:
                 raise OpenRouterAPIError(f"HTTP error occurred: {str(e)}") from e
 
             try:
-                response_data = response.json()
+                response_data: Dict[str, Any] = response.json()
                 logger.info(f"OpenRouter API Raw Response: {response_data}")
                 return response_data
             except Exception as e:
@@ -156,3 +161,14 @@ class OpenRouterAPI:
             if isinstance(e, (OpenRouterAPIError, RateLimitError)):
                 raise
             raise OpenRouterAPIError(f"Error during API request: {str(e)}") from e
+
+
+class OpenRouterResponse:
+    def __init__(self, data: Dict[str, Any]) -> None:
+        """Initialize from API response data."""
+        self.data = data
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert to dictionary."""
+        data: Dict[str, Any] = self.data
+        return data

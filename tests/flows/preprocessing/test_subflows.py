@@ -1,9 +1,10 @@
 import json
+from pathlib import Path
 
 from src.flows.preprocessing.subflows import process_song_annotations_flow
 
 
-def test_process_song_annotations_flow(tmp_path):
+def test_process_song_annotations_flow(tmp_path: Path) -> None:
     """Test the preprocessing flow end-to-end"""
     # Create mock song directory with required files
     song_id = 2236

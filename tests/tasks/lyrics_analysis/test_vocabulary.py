@@ -6,7 +6,7 @@ from src.tasks.lyrics_analysis.vocabulary import analyze_fragment
 
 
 @pytest.mark.asyncio
-async def test_analyze_fragment():
+async def test_analyze_fragment() -> None:
     """Test that analyze_fragment correctly processes a line with vocabulary terms."""
     # Test input
     fragment = {
@@ -46,7 +46,7 @@ async def test_analyze_fragment():
 
 
 @pytest.mark.asyncio
-async def test_analyze_fragment_no_vocabulary():
+async def test_analyze_fragment_no_vocabulary() -> None:
     """Test that analyze_fragment correctly handles lines without special vocabulary."""
     fragment = {
         "text": "I love you",

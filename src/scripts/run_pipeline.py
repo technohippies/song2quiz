@@ -150,7 +150,7 @@ def run_pipeline(
 
 
 @click.group(name="song2quiz")
-def cli_group():
+def cli_group() -> None:
     """Song2Quiz CLI tool for managing song analysis pipeline."""
     pass
 

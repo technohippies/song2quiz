@@ -1,4 +1,5 @@
 import json
+from pathlib import Path
 
 import pytest
 from prefect.logging.loggers import disable_run_logger
@@ -9,9 +10,9 @@ from src.tasks.preprocessing.match_lyrics_to_annotations import (
 
 
 @pytest.fixture
-def mock_song_dir(tmp_path):
+def mock_song_dir(tmp_path: Path) -> Path:
     """Create a temporary song directory with mock lyrics and annotations"""
-    song_dir = tmp_path / "2236"
+    song_dir: Path = tmp_path / "2236"
     song_dir.mkdir()
 
     # Create mock cleaned annotations
@@ -41,7 +42,7 @@ def mock_song_dir(tmp_path):
     return song_dir
 
 
-def test_match_lyrics_success(mock_song_dir):
+def test_match_lyrics_success(mock_song_dir: Path) -> None:
     """Test successful matching of lyrics with annotations"""
     with disable_run_logger():
         result = match_lyrics_with_annotations.fn(mock_song_dir)
@@ -63,7 +64,7 @@ def test_match_lyrics_success(mock_song_dir):
     assert matched_data["lyrics"][1]["annotation"] is None  # No match for this line
 
 
-def test_match_lyrics_no_annotations_file(tmp_path):
+def test_match_lyrics_no_annotations_file(tmp_path: Path) -> None:
     """Test behavior when annotations file is missing"""
     empty_dir = tmp_path / "2236"
     empty_dir.mkdir()
@@ -80,7 +81,7 @@ def test_match_lyrics_no_annotations_file(tmp_path):
     assert result is False
 
 
-def test_match_lyrics_no_lyrics_file(tmp_path):
+def test_match_lyrics_no_lyrics_file(tmp_path: Path) -> None:
     """Test behavior when lyrics file is missing"""
     empty_dir = tmp_path / "2236"
     empty_dir.mkdir()
@@ -91,7 +92,7 @@ def test_match_lyrics_no_lyrics_file(tmp_path):
     assert result is False
 
 
-def test_match_lyrics_exact_match(mock_song_dir):
+def test_match_lyrics_exact_match(mock_song_dir: Path) -> None:
     """Test exact matching between lyrics and annotations"""
     # Override with exact matching test case
     cleaned_annotations = [
