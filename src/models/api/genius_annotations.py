@@ -6,15 +6,18 @@ from typing import Any, Dict, List, Optional
 class Range:
     content: str
 
+
 @dataclass
 class BoundingBox:
     width: int
     height: int
 
+
 @dataclass
 class AvatarImage:
     url: str
     bounding_box: BoundingBox
+
 
 @dataclass
 class Avatar:
@@ -23,11 +26,13 @@ class Avatar:
     small: AvatarImage
     medium: AvatarImage
 
+
 @dataclass
 class UserMetadata:
     permissions: List[str]
     excluded_permissions: List[str]
     interactions: Dict[str, bool]
+
 
 @dataclass
 class User:
@@ -43,15 +48,18 @@ class User:
     url: str
     current_user_metadata: UserMetadata
 
+
 @dataclass
 class Author:
     attribution: float
     pinned_role: Optional[str]
     user: User
 
+
 @dataclass
 class IQAction:
     primary: Dict[str, Any]
+
 
 @dataclass
 class AnnotationMetadata:
@@ -60,14 +68,17 @@ class AnnotationMetadata:
     interactions: Dict[str, bool]
     iq_by_action: Dict[str, IQAction]
 
+
 @dataclass
 class DOMNode:
     tag: str
     children: List[Any]  # Can be either strings or more DOMNodes
 
+
 @dataclass
 class AnnotationBody:
     dom: DOMNode
+
 
 @dataclass
 class Annotation:
@@ -91,10 +102,12 @@ class Annotation:
     rejection_comment: Optional[str]
     verified_by: Optional[str]
 
+
 @dataclass
 class ClientTimestamps:
     updated_by_human_at: int
     lyrics_updated_at: int
+
 
 @dataclass
 class Annotatable:
@@ -107,6 +120,7 @@ class Annotatable:
     title: str
     type: str
     url: str
+
 
 @dataclass
 class Referent:

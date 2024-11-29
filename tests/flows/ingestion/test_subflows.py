@@ -18,41 +18,50 @@ def mock_genius_response():
         "path": "/The-beatles-yesterday-lyrics",
         "url": "https://genius.com/The-beatles-yesterday-lyrics",
         "annotation_count": 6,
-        "primary_artist_names": "The Beatles"
+        "primary_artist_names": "The Beatles",
     }
+
 
 @pytest.fixture
 def mock_lyrics_response():
     """Mock response for LRCLib API"""
-    return {
-        "lyrics": "Test lyrics",
-        "syncedLyrics": "[00:00.00]Test lyrics"
-    }
+    return {"lyrics": "Test lyrics", "syncedLyrics": "[00:00.00]Test lyrics"}
+
 
 @pytest.fixture
 def mock_annotations():
     """Mock Genius annotations - simplified structure based on actual API response"""
-    return [{
-        "_type": "referent",
-        "id": 1,
-        "fragment": "Test fragment",
-        "annotations": [{
-            "body": {
-                "dom": {
-                    "tag": "root",
-                    "children": [
-                        {"tag": "text", "children": ["This is a test annotation"]}
-                    ]
+    return [
+        {
+            "_type": "referent",
+            "id": 1,
+            "fragment": "Test fragment",
+            "annotations": [
+                {
+                    "body": {
+                        "dom": {
+                            "tag": "root",
+                            "children": [
+                                {
+                                    "tag": "text",
+                                    "children": ["This is a test annotation"],
+                                }
+                            ],
+                        }
+                    }
                 }
-            }
-        }]
-    }]
+            ],
+        }
+    ]
 
-def test_song_ingestion_flow(tmp_path, mock_genius_response, mock_lyrics_response, mock_annotations):
+
+def test_song_ingestion_flow(
+    tmp_path, mock_genius_response, mock_lyrics_response, mock_annotations
+):
     """Test the song ingestion flow with mocked API responses"""
 
     # Mock the API calls
-    with patch('src.services.genius.GeniusAPI') as MockGenius:
+    with patch("src.services.genius.GeniusAPI") as MockGenius:
         # Configure mock responses
         genius_instance = MockGenius.return_value
         genius_instance.search_song.return_value = mock_genius_response
@@ -60,9 +69,7 @@ def test_song_ingestion_flow(tmp_path, mock_genius_response, mock_lyrics_respons
 
         # Run the flow
         result = song_ingestion_flow(
-            song_name="Yesterday",
-            artist_name="The Beatles",
-            base_path=str(tmp_path)
+            song_name="Yesterday", artist_name="The Beatles", base_path=str(tmp_path)
         )
 
         # Verify the result
@@ -85,10 +92,11 @@ def test_song_ingestion_flow(tmp_path, mock_genius_response, mock_lyrics_respons
             assert len(catalog) == 1
             assert catalog[0]["id"] == 2236
 
+
 def test_song_ingestion_flow_no_metadata(tmp_path):
     """Test the flow when no metadata is found"""
 
-    with patch('src.services.genius.GeniusAPI') as MockGenius:
+    with patch("src.services.genius.GeniusAPI") as MockGenius:
         # Configure mock to return None for metadata
         genius_instance = MockGenius.return_value
         genius_instance.search_song.return_value = None
@@ -97,7 +105,7 @@ def test_song_ingestion_flow_no_metadata(tmp_path):
         result = song_ingestion_flow(
             song_name="Nonexistent Song",
             artist_name="Unknown Artist",
-            base_path=str(tmp_path)
+            base_path=str(tmp_path),
         )
 
         # Verify the result indicates failure

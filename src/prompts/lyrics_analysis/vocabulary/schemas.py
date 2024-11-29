@@ -1,4 +1,5 @@
 """JSON schemas for vocabulary analysis responses."""
+
 from typing import Dict
 
 VOCABULARY_RESPONSE_SCHEMA = {
@@ -14,31 +15,33 @@ VOCABULARY_RESPONSE_SCHEMA = {
                     "vocabulary_type": {
                         "type": "string",
                         "enum": [
-                            "proper_noun", "brand", "slang", "aave", "vernacular",
-                            "colloquialism", "acronym", "compound", "portmanteau",
-                            "idiom", "phrasal_verb", "neologism", "wordplay"
-                        ]
+                            "proper_noun",
+                            "brand",
+                            "slang",
+                            "aave",
+                            "vernacular",
+                            "colloquialism",
+                            "acronym",
+                            "compound",
+                            "portmanteau",
+                            "idiom",
+                            "phrasal_verb",
+                            "neologism",
+                            "wordplay",
+                        ],
                     },
                     "definition": {"type": "string"},
                     "usage_notes": {"type": "string"},
-                    "variants": {
-                        "type": "array",
-                        "items": {"type": "string"}
-                    },
-                    "see_also": {
-                        "type": "array",
-                        "items": {"type": "string"}
-                    },
+                    "variants": {"type": "array", "items": {"type": "string"}},
+                    "see_also": {"type": "array", "items": {"type": "string"}},
                     "etymology": {"type": "string"},
                     "register": {"type": "string"},
-                    "domain": {"type": "string"}
-                }
-            }
+                    "domain": {"type": "string"},
+                },
+            },
         }
     },
-    "required": ["vocabulary"]
+    "required": ["vocabulary"],
 }
 
-SCHEMAS: Dict[str, dict] = {
-    "vocabulary_response": VOCABULARY_RESPONSE_SCHEMA
-}
+SCHEMAS: Dict[str, dict] = {"vocabulary_response": VOCABULARY_RESPONSE_SCHEMA}

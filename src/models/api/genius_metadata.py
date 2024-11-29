@@ -6,6 +6,7 @@ from typing import Any, Dict, List, Optional
 @dataclass
 class Artist:
     """Artist information from Genius."""
+
     api_path: str
     id: int
     name: str
@@ -16,9 +17,11 @@ class Artist:
     is_meme_verified: bool = False
     iq: Optional[int] = None  # Some artists have an IQ field
 
+
 @dataclass
 class Album:
     """Album information from Genius."""
+
     api_path: str
     id: int
     name: str
@@ -29,15 +32,19 @@ class Album:
     artist: Optional[Artist] = None
     primary_artists: List[Artist] = field(default_factory=list)
 
+
 @dataclass
 class Performance:
     """Custom performance credits."""
+
     label: str
     artists: List[Artist]
+
 
 @dataclass
 class Stats:
     """Song statistics from Genius."""
+
     pageviews: int = 0
     accepted_annotations: int = 0
     contributors: int = 0
@@ -48,14 +55,18 @@ class Stats:
     hot: bool = False
     concurrents: Optional[int] = None
 
+
 @dataclass
 class Description:
     """Song description with DOM structure."""
+
     dom: Dict[str, Any]  # Storing as raw dict since DOM structure varies
+
 
 @dataclass
 class GeniusMetadata:
     """Complete song metadata from Genius."""
+
     id: int
     title: str
     full_title: str
@@ -97,7 +108,7 @@ class GeniusMetadata:
     apple_music_player_url: Optional[str] = None
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> 'GeniusMetadata':
+    def from_dict(cls, data: Dict[str, Any]) -> "GeniusMetadata":
         """Create from Genius API response."""
         # Convert nested structures
         album_data = data.get("album", {})
@@ -109,13 +120,15 @@ class GeniusMetadata:
                 url=album_data.get("url", ""),
                 full_title=album_data.get("full_title", album_data.get("name", "")),
                 cover_art_url=album_data.get("cover_art_url"),
-                release_date_for_display=album_data.get("release_date_for_display")
+                release_date_for_display=album_data.get("release_date_for_display"),
             )
         else:
             album = None
 
         stats = Stats(**data.get("stats", {})) if data.get("stats") else None
-        description = Description(data["description"]) if data.get("description") else None
+        description = (
+            Description(data["description"]) if data.get("description") else None
+        )
 
         performances = []
         for perf in data.get("custom_performances", []):
@@ -150,7 +163,7 @@ class GeniusMetadata:
             "album": album,
             "stats": stats,
             "description": description,
-            "custom_performances": performances
+            "custom_performances": performances,
         }
 
         return cls(**metadata)

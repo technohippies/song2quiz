@@ -13,25 +13,33 @@ def mock_song_path(tmp_path):
     song_dir.mkdir()
 
     # Create mock annotations file
-    annotations = [{
-        "id": 1,
-        "fragment": "Test fragment",
-        "annotations": [{
-            "body": {
-                "dom": {
-                    "tag": "root",
-                    "children": [
-                        {"tag": "text", "children": ["This is a test annotation"]}
-                    ]
+    annotations = [
+        {
+            "id": 1,
+            "fragment": "Test fragment",
+            "annotations": [
+                {
+                    "body": {
+                        "dom": {
+                            "tag": "root",
+                            "children": [
+                                {
+                                    "tag": "text",
+                                    "children": ["This is a test annotation"],
+                                }
+                            ],
+                        }
+                    }
                 }
-            }
-        }]
-    }]
+            ],
+        }
+    ]
 
     with open(song_dir / "genius_annotations.json", "w") as f:
         json.dump(annotations, f)
 
     return song_dir
+
 
 def test_process_annotations_success(mock_song_path):
     """Test successful processing of annotations"""
@@ -51,6 +59,7 @@ def test_process_annotations_success(mock_song_path):
     assert cleaned_data[0]["id"] == 1
     assert "fragment" in cleaned_data[0]
     assert "annotation_text" in cleaned_data[0]
+
 
 def test_process_annotations_no_input_file(tmp_path):
     """Test behavior when input file doesn't exist"""

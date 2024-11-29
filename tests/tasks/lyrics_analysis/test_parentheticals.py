@@ -1,4 +1,5 @@
 """Tests for parenthetical analysis task."""
+
 from src.tasks.lyrics_analysis.parentheticals import analyze_parentheticals
 
 
@@ -12,6 +13,7 @@ def test_analyze_parentheticals_with_adlib():
     assert result["line_without_parentheses"] == "Money on my mind"
     assert result["parentheticals"] == ["yeah"]
 
+
 def test_analyze_parentheticals_with_context():
     """Test analyzing parentheticals with context lines."""
     lyrics = "Started from the bottom (now we here)"
@@ -21,6 +23,7 @@ def test_analyze_parentheticals_with_context():
     assert "parentheticals" in result
     assert result["line_without_parentheses"] == "Started from the bottom"
     assert result["parentheticals"] == ["now we here"]
+
 
 def test_analyze_parentheticals_no_parens():
     """Test analyzing lyrics without parentheticals."""

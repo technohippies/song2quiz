@@ -1,4 +1,5 @@
 """Client for making requests to OpenRouter API with configurable models"""
+
 import json
 import logging
 import sys
@@ -14,14 +15,17 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 handler = logging.StreamHandler(sys.stdout)
 handler.setLevel(logging.INFO)
-formatter = logging.Formatter('%(asctime)s | %(levelname)s | %(message)s')
+formatter = logging.Formatter("%(asctime)s | %(levelname)s | %(message)s")
 handler.setFormatter(formatter)
 logger.addHandler(handler)
 logger.propagate = False  # Don't double log
 
+
 class OpenRouterAPIError(Exception):
     """Custom exception for OpenRouter API errors."""
+
     pass
+
 
 class OpenRouterClient:
     """Client for making requests to OpenRouter API with configurable models"""
@@ -38,7 +42,7 @@ class OpenRouterClient:
             "Authorization": f"Bearer {self.api_key}",
             "HTTP-Referer": "https://github.com/sage-ai/sage",
             "X-Title": "Sage AI",
-            "Content-Type": "application/json"
+            "Content-Type": "application/json",
         }
 
         self.task_type = task_type or "default"
@@ -51,15 +55,21 @@ class OpenRouterClient:
             logger.info(f"Using specified fallback model: {fallback_model}")
             return fallback_model
 
-        task_models = OPENROUTER_MODELS.get(self.task_type, OPENROUTER_MODELS["default"])
+        task_models = OPENROUTER_MODELS.get(
+            self.task_type, OPENROUTER_MODELS["default"]
+        )
         if not task_models:
-            raise OpenRouterAPIError(f"No models configured for task type: {self.task_type}")
+            raise OpenRouterAPIError(
+                f"No models configured for task type: {self.task_type}"
+            )
 
         # If primary model has failed before, use fallback immediately
         primary_model = task_models[0]
         if primary_model in self._failed_models:
             fallback = OPENROUTER_MODELS["fallback"][0]
-            logger.info(f"Using fallback model {fallback} (primary model {primary_model} failed previously)")
+            logger.info(
+                f"Using fallback model {fallback} (primary model {primary_model} failed previously)"
+            )
             return fallback
 
         logger.info(f"Using model: {primary_model}")
@@ -71,7 +81,7 @@ class OpenRouterClient:
         system_prompt: Optional[str] = None,
         temperature: float = 0.7,
         max_tokens: Optional[int] = None,
-        fallback_model: Optional[str] = None
+        fallback_model: Optional[str] = None,
     ) -> Dict[str, Any]:
         """Complete a chat conversation."""
         try:
@@ -81,11 +91,11 @@ class OpenRouterClient:
                 "model": model,
                 "messages": [
                     {"role": "system", "content": system_prompt or ""},
-                    {"role": "user", "content": prompt}
+                    {"role": "user", "content": prompt},
                 ],
                 "temperature": temperature,
                 "max_tokens": max_tokens or 256,
-                "response_format": {"type": "json_object"}
+                "response_format": {"type": "json_object"},
             }
 
             logger.info("=" * 100)
@@ -99,7 +109,7 @@ class OpenRouterClient:
                 response = self.client.post(
                     f"{self.base_url}/chat/completions",
                     headers=self.headers,
-                    json=request_data
+                    json=request_data,
                 )
 
                 logger.info("=" * 100)
@@ -131,19 +141,23 @@ class OpenRouterClient:
                     logger.info("=" * 100)
 
                     if not isinstance(result, dict):
-                        raise json.JSONDecodeError("Response must be a JSON object", content, 0)
+                        raise json.JSONDecodeError(
+                            "Response must be a JSON object", content, 0
+                        )
                     return result
                 except json.JSONDecodeError as e:
                     if not fallback_model and "google/gemini" in model:
                         self._failed_models.add(model)
                         fallback = OPENROUTER_MODELS["fallback"][0]
-                        logger.warning(f"🔄 JSON parsing failed with {model}, falling back to {fallback}")
+                        logger.warning(
+                            f"🔄 JSON parsing failed with {model}, falling back to {fallback}"
+                        )
                         return await self.complete(
                             prompt=prompt,
                             system_prompt=system_prompt,
                             temperature=temperature,
                             max_tokens=max_tokens,
-                            fallback_model=fallback
+                            fallback_model=fallback,
                         )
                     logger.error(f"❌ JSON parsing failed with {model}: {str(e)}")
                     return {"error": f"Failed to parse response as JSON: {str(e)}"}
@@ -152,26 +166,30 @@ class OpenRouterClient:
                 if "blocklist" in str(e).lower() and not fallback_model:
                     self._failed_models.add(model)
                     fallback = OPENROUTER_MODELS["fallback"][0]
-                    logger.warning(f"⚠️ Model {model} blocked, falling back to {fallback}")
+                    logger.warning(
+                        f"⚠️ Model {model} blocked, falling back to {fallback}"
+                    )
                     return await self.complete(
                         prompt=prompt,
                         system_prompt=system_prompt,
                         temperature=temperature,
                         max_tokens=max_tokens,
-                        fallback_model=fallback
+                        fallback_model=fallback,
                     )
                 return {"error": f"HTTP error with {model}: {str(e)}"}
             except Exception as e:
                 if not fallback_model and "google/gemini" in model:
                     self._failed_models.add(model)
                     fallback = OPENROUTER_MODELS["fallback"][0]
-                    logger.warning(f"⚠️ Unexpected error with {model}, falling back to {fallback}: {str(e)}")
+                    logger.warning(
+                        f"⚠️ Unexpected error with {model}, falling back to {fallback}: {str(e)}"
+                    )
                     return await self.complete(
                         prompt=prompt,
                         system_prompt=system_prompt,
                         temperature=temperature,
                         max_tokens=max_tokens,
-                        fallback_model=fallback
+                        fallback_model=fallback,
                     )
                 return {"error": f"Unexpected error with {model}: {str(e)}"}
 

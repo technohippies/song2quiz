@@ -1,4 +1,5 @@
 """Tests for vocabulary analysis tasks."""
+
 import pytest
 
 from src.tasks.lyrics_analysis.vocabulary import analyze_fragment
@@ -12,7 +13,7 @@ async def test_analyze_fragment():
         "text": "That whip is fire, no cap",
         "id": "test_id_1",
         "timestamp": "00:00:10",
-        "annotation": None
+        "annotation": None,
     }
 
     # Run analysis
@@ -43,6 +44,7 @@ async def test_analyze_fragment():
         assert isinstance(term["vocabulary_type"], str)
         assert isinstance(term["definition"], str)
 
+
 @pytest.mark.asyncio
 async def test_analyze_fragment_no_vocabulary():
     """Test that analyze_fragment correctly handles lines without special vocabulary."""
@@ -50,7 +52,7 @@ async def test_analyze_fragment_no_vocabulary():
         "text": "I love you",
         "id": "test_id_2",
         "timestamp": "00:00:20",
-        "annotation": None
+        "annotation": None,
     }
 
     result = await analyze_fragment(fragment, 1, 1)

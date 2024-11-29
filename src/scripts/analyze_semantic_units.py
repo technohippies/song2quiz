@@ -1,4 +1,5 @@
 """Script to run semantic units analysis on a song."""
+
 import asyncio
 import logging
 import sys
@@ -10,8 +11,8 @@ from src.utils.settings import settings
 # Configure logging
 logging.basicConfig(
     level=logging.DEBUG,
-    format='%(asctime)s | %(name)s | %(levelname)s | %(message)s',
-    datefmt='%H:%M:%S'
+    format="%(asctime)s | %(name)s | %(levelname)s | %(message)s",
+    datefmt="%H:%M:%S",
 )
 
 logger = logging.getLogger(__name__)
@@ -22,6 +23,7 @@ logger.info(f"Public key set: {bool(settings.LANGFUSE_PUBLIC_KEY)}")
 logger.info(f"Secret key set: {bool(settings.LANGFUSE_SECRET_KEY)}")
 logger.info(f"Host: {settings.LANGFUSE_HOST}")
 
+
 async def run_analysis(song_id: str):
     """Run semantic units analysis on a song."""
     try:
@@ -31,7 +33,9 @@ async def run_analysis(song_id: str):
             sys.exit(1)
 
         if not Path(song_path, "lyrics_with_annotations.json").exists():
-            logger.error(f"❌ No lyrics file found at {song_path}/lyrics_with_annotations.json")
+            logger.error(
+                f"❌ No lyrics file found at {song_path}/lyrics_with_annotations.json"
+            )
             sys.exit(1)
 
         result = await main(song_path)
@@ -43,6 +47,7 @@ async def run_analysis(song_id: str):
     except Exception as e:
         logger.error(f"❌ Error running analysis: {str(e)}")
         sys.exit(1)
+
 
 if __name__ == "__main__":
     if len(sys.argv) != 2:

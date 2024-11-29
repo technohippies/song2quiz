@@ -1,4 +1,5 @@
 """Main flow for lyrics generation."""
+
 import logging
 
 from prefect import flow
@@ -7,6 +8,7 @@ from src.tasks.lyrics_analysis.semantic_units import analyze_song_semantic_units
 from src.tasks.lyrics_analysis.vocabulary import analyze_song_vocabulary
 
 logger = logging.getLogger(__name__)
+
 
 @flow(name="lyrics_generation")
 async def main(song_path: str) -> bool:

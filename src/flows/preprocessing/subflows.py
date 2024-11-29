@@ -1,4 +1,5 @@
 """Preprocessing subflows for cleaning and matching song annotations."""
+
 import json
 import logging
 from pathlib import Path
@@ -16,8 +17,11 @@ from src.utils.io.paths import get_song_dir
 
 logger = logging.getLogger(__name__)
 
+
 @flow(name="process_song_annotations")
-def process_song_annotations_flow(song_id: int, base_path: Optional[Union[str, Path]] = None) -> bool:
+def process_song_annotations_flow(
+    song_id: int, base_path: Optional[Union[str, Path]] = None
+) -> bool:
     """
     Flow to process and match song annotations.
 
@@ -69,21 +73,27 @@ def process_song_annotations_flow(song_id: int, base_path: Optional[Union[str, P
         for line in lyrics_data["lyrics"]:
             result = analyze_parentheticals(line["text"])
             if result["parentheticals"]:  # Only include if it has parentheticals
-                results.append({
-                    "id": line["id"],
-                    "timestamp": line["timestamp"],
-                    "text": line["text"],
-                    "line_without_parentheses": result["line_without_parentheses"],
-                    "parentheticals": result["parentheticals"]
-                })
+                results.append(
+                    {
+                        "id": line["id"],
+                        "timestamp": line["timestamp"],
+                        "text": line["text"],
+                        "line_without_parentheses": result["line_without_parentheses"],
+                        "parentheticals": result["parentheticals"],
+                    }
+                )
 
         # Save results
         output_path = song_dir / "parentheticals_analysis.json"
         with open(output_path, "w") as f:
-            json.dump({
-                "lines_with_parentheticals": results,
-                "total_parenthetical_lines": len(results)
-            }, f, indent=2)
+            json.dump(
+                {
+                    "lines_with_parentheticals": results,
+                    "total_parenthetical_lines": len(results),
+                },
+                f,
+                indent=2,
+            )
 
         logger.info(f"✓ Found {len(results)} lines with parentheticals")
 
@@ -93,6 +103,7 @@ def process_song_annotations_flow(song_id: int, base_path: Optional[Union[str, P
 
     logger.info(f"Successfully processed annotations for song {song_id}")
     return True
+
 
 # CLI for testing
 if __name__ == "__main__":

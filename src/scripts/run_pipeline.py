@@ -1,4 +1,5 @@
 """Run the complete pipeline for a song."""
+
 import asyncio
 import logging
 from pathlib import Path
@@ -12,6 +13,7 @@ import src.flows.preprocessing.subflows
 
 logger = logging.getLogger(__name__)
 
+
 def find_song_id(artist: str, song: str) -> Optional[str]:
     """Find song ID from artist and song name."""
     import json
@@ -23,8 +25,10 @@ def find_song_id(artist: str, song: str) -> Optional[str]:
 
         # Look for matching song in list
         for song_data in songs:
-            if song_data.get("artist_name", "").lower() == artist.lower() and \
-               song_data.get("song_name", "").lower() == song.lower():
+            if (
+                song_data.get("artist_name", "").lower() == artist.lower()
+                and song_data.get("song_name", "").lower() == song.lower()
+            ):
                 return str(song_data.get("id"))
 
         print(f"No match found for {artist} - {song}")
@@ -38,6 +42,7 @@ def find_song_id(artist: str, song: str) -> Optional[str]:
 
     return None
 
+
 def run_pipeline(
     artist: Optional[str] = None,
     song: Optional[str] = None,
@@ -45,7 +50,7 @@ def run_pipeline(
     steps: str = "all",
     batch_size: int = 15,
     max_retries: int = 3,
-    data_dir: str = "data"
+    data_dir: str = "data",
 ) -> None:
     """Run the complete pipeline for a song.
 
@@ -74,7 +79,9 @@ def run_pipeline(
             song_id = find_song_id(artist, song)
             if not song_id:
                 print(f"Could not find song ID for {artist} - {song}")
-                print("Please make sure the song is ingested first using the ingestion pipeline.")
+                print(
+                    "Please make sure the song is ingested first using the ingestion pipeline."
+                )
                 return
 
         # Set up paths
@@ -84,12 +91,12 @@ def run_pipeline(
         if steps in ["all", "ingest"]:
             print("\n🔄 Running ingestion...")
             if not song or not artist:
-                print("\n❌ Ingestion failed: song and artist names are required for ingestion")
+                print(
+                    "\n❌ Ingestion failed: song and artist names are required for ingestion"
+                )
                 return
             result = src.flows.ingestion.subflows.song_ingestion_flow(
-                song_name=song,
-                artist_name=artist,
-                base_path=str(Path(data_dir))
+                song_name=song, artist_name=artist, base_path=str(Path(data_dir))
             )
             if not result or not result.get("song_path"):
                 print("\n❌ Ingestion failed")
@@ -116,8 +123,7 @@ def run_pipeline(
                 return
 
             success = src.flows.preprocessing.subflows.process_song_annotations_flow(
-                song_id=song_id_int,
-                base_path=str(Path(data_dir))
+                song_id=song_id_int, base_path=str(Path(data_dir))
             )
             if not success:
                 print("\n❌ Preprocessing failed")
@@ -129,9 +135,9 @@ def run_pipeline(
             if not song_path or not song_path.exists():
                 print("\n❌ Vocabulary analysis failed: song path not found")
                 return
-            success = asyncio.run(src.flows.generation.main.main(
-                song_path=str(song_path)
-            ))
+            success = asyncio.run(
+                src.flows.generation.main.main(song_path=str(song_path))
+            )
             if not success:
                 print("\n❌ Vocabulary analysis failed")
                 return
@@ -142,10 +148,12 @@ def run_pipeline(
         print(f"\n❌ Pipeline failed with error: {str(e)}")
         return
 
+
 @click.group(name="song2quiz")
 def cli_group():
     """Song2Quiz CLI tool for managing song analysis pipeline."""
     pass
+
 
 @cli_group.command(name="run-pipeline")
 @click.option("--artist", help="Artist name")
@@ -174,6 +182,7 @@ def run_pipeline_cli(
 ) -> None:
     """Run the complete pipeline for a song."""
     run_pipeline(artist, song, song_id, steps, batch_size, max_retries, data_dir)
+
 
 cli = cli_group  # For backwards compatibility with tests
 

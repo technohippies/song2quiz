@@ -11,30 +11,35 @@ def test_process_song_annotations_flow(tmp_path):
     song_dir.mkdir(parents=True)
 
     # Create mock genius_annotations.json
-    annotations = [{
-        "id": 1,
-        "fragment": "Test fragment",
-        "annotations": [{
-            "body": {
-                "dom": {
-                    "tag": "root",
-                    "children": [
-                        {"tag": "text", "children": ["This is a test annotation"]}
-                    ]
+    annotations = [
+        {
+            "id": 1,
+            "fragment": "Test fragment",
+            "annotations": [
+                {
+                    "body": {
+                        "dom": {
+                            "tag": "root",
+                            "children": [
+                                {
+                                    "tag": "text",
+                                    "children": ["This is a test annotation"],
+                                }
+                            ],
+                        }
+                    }
                 }
-            }
-        }]
-    }]
+            ],
+        }
+    ]
 
     with open(song_dir / "genius_annotations.json", "w") as f:
         json.dump(annotations, f)
 
     # Create mock lyrics.json
     lyrics = {
-        "timestamped_lines": [
-            {"timestamp": "00:00", "text": "Test fragment"}
-        ],
-        "source": "test"
+        "timestamped_lines": [{"timestamp": "00:00", "text": "Test fragment"}],
+        "source": "test",
     }
 
     with open(song_dir / "lyrics.json", "w") as f:

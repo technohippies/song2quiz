@@ -15,11 +15,13 @@ def mock_song_dir(tmp_path):
     song_dir.mkdir()
 
     # Create mock cleaned annotations
-    cleaned_annotations = [{
-        "id": 1,
-        "fragment": "Yesterday",
-        "annotation_text": "This is an annotation about yesterday"
-    }]
+    cleaned_annotations = [
+        {
+            "id": 1,
+            "fragment": "Yesterday",
+            "annotation_text": "This is an annotation about yesterday",
+        }
+    ]
 
     with open(song_dir / "annotations_cleaned.json", "w") as f:
         json.dump(cleaned_annotations, f)
@@ -29,14 +31,15 @@ def mock_song_dir(tmp_path):
         "source": "test",
         "timestamped_lines": [
             {"timestamp": "00:00.00", "text": "Yesterday"},
-            {"timestamp": "00:05.00", "text": "All my troubles seemed so far away"}
-        ]
+            {"timestamp": "00:05.00", "text": "All my troubles seemed so far away"},
+        ],
     }
 
     with open(song_dir / "lyrics.json", "w") as f:
         json.dump(lyrics, f)
 
     return song_dir
+
 
 def test_match_lyrics_success(mock_song_dir):
     """Test successful matching of lyrics with annotations"""
@@ -59,17 +62,14 @@ def test_match_lyrics_success(mock_song_dir):
     assert matched_data["lyrics"][0]["annotation"] is not None
     assert matched_data["lyrics"][1]["annotation"] is None  # No match for this line
 
+
 def test_match_lyrics_no_annotations_file(tmp_path):
     """Test behavior when annotations file is missing"""
     empty_dir = tmp_path / "2236"
     empty_dir.mkdir()
 
     # Create only lyrics file
-    lyrics = {
-        "timestamped_lines": [
-            {"timestamp": "00:00.00", "text": "Test line"}
-        ]
-    }
+    lyrics = {"timestamped_lines": [{"timestamp": "00:00.00", "text": "Test line"}]}
 
     with open(empty_dir / "lyrics.json", "w") as f:
         json.dump(lyrics, f)
@@ -78,6 +78,7 @@ def test_match_lyrics_no_annotations_file(tmp_path):
         result = match_lyrics_with_annotations.fn(empty_dir)
 
     assert result is False
+
 
 def test_match_lyrics_no_lyrics_file(tmp_path):
     """Test behavior when lyrics file is missing"""
@@ -89,23 +90,18 @@ def test_match_lyrics_no_lyrics_file(tmp_path):
 
     assert result is False
 
+
 def test_match_lyrics_exact_match(mock_song_dir):
     """Test exact matching between lyrics and annotations"""
     # Override with exact matching test case
-    cleaned_annotations = [{
-        "id": 1,
-        "fragment": "Yesterday",
-        "annotation_text": "About the past"
-    }]
+    cleaned_annotations = [
+        {"id": 1, "fragment": "Yesterday", "annotation_text": "About the past"}
+    ]
 
     with open(mock_song_dir / "annotations_cleaned.json", "w") as f:
         json.dump(cleaned_annotations, f)
 
-    lyrics = {
-        "timestamped_lines": [
-            {"timestamp": "00:00.00", "text": "Yesterday"}
-        ]
-    }
+    lyrics = {"timestamped_lines": [{"timestamp": "00:00.00", "text": "Yesterday"}]}
 
     with open(mock_song_dir / "lyrics.json", "w") as f:
         json.dump(lyrics, f)

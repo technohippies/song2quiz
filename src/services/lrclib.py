@@ -14,6 +14,7 @@ from src.models.api.lrclib import LRCLibLyrics
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
+
 class LRCLibAPI:
     """Client for the LRCLib API with rate limiting and error handling"""
 
@@ -28,10 +29,7 @@ class LRCLibAPI:
         self.rate_limit = rate_limit
         self.last_request_time = 0
 
-        self.headers = {
-            "Accept": "application/json",
-            "User-Agent": "song2quiz/1.0"
-        }
+        self.headers = {"Accept": "application/json", "User-Agent": "song2quiz/1.0"}
         logger.debug("Initialized LRCLibAPI client")
 
     def _make_request(self, endpoint: str, params: Optional[Dict] = None) -> Dict:
@@ -57,7 +55,9 @@ class LRCLibAPI:
         url = f"{self.base_url}/{endpoint}"
         try:
             logger.debug(f"Making request to LRCLib API - URL: {url}, Params: {params}")
-            response = requests.get(url, headers=self.headers, params=params, timeout=10)
+            response = requests.get(
+                url, headers=self.headers, params=params, timeout=10
+            )
             self.last_request_time = time.time()
 
             logger.debug(f"LRCLib API Status Code: {response.status_code}")
@@ -95,11 +95,7 @@ class LRCLibAPI:
         try:
             # Search for the song
             search_results = self._make_request(
-                "search",
-                params={
-                    "track_name": song_name,
-                    "artist_name": artist_name
-                }
+                "search", params={"track_name": song_name, "artist_name": artist_name}
             )
 
             if not search_results or not isinstance(search_results, list):
@@ -109,20 +105,22 @@ class LRCLibAPI:
             # Find the best match - prefer results with synced lyrics
             best_match = None
             for result in search_results:
-                if result.get('syncedLyrics'):
+                if result.get("syncedLyrics"):
                     best_match = result
                     break
-                elif result.get('plainLyrics') and not best_match:
+                elif result.get("plainLyrics") and not best_match:
                     best_match = result
 
             if not best_match:
-                logger.warning(f"No usable lyrics found for {song_name} by {artist_name}")
+                logger.warning(
+                    f"No usable lyrics found for {song_name} by {artist_name}"
+                )
                 return None
 
             return LRCLibLyrics(
-                lyrics=best_match.get('syncedLyrics', ''),
-                has_timestamps=bool(best_match.get('syncedLyrics')),
-                plain_lyrics=best_match.get('plainLyrics', '')
+                lyrics=best_match.get("syncedLyrics", ""),
+                has_timestamps=bool(best_match.get("syncedLyrics")),
+                plain_lyrics=best_match.get("plainLyrics", ""),
             )
 
         except Exception as e:
@@ -144,18 +142,25 @@ class LRCLibAPI:
             lyrics_path = song_path / "lrclib_lyrics.json"
 
             # Save as JSON, dataclass has built-in asdict() method
-            with open(lyrics_path, 'w', encoding='utf-8') as f:
-                json.dump({
-                    "source": lyrics.source,
-                    "match_score": lyrics.match_score,
-                    "lyrics": lyrics.lyrics,
-                    "has_timestamps": lyrics.has_timestamps,
-                    "plain_lyrics": lyrics.plain_lyrics,
-                    "timestamped_lines": [
-                        {"timestamp": str(line.timestamp), "text": line.text}
-                        for line in lyrics.timestamped_lines
-                    ] if lyrics.has_timestamps else []
-                }, f, ensure_ascii=False, indent=2)
+            with open(lyrics_path, "w", encoding="utf-8") as f:
+                json.dump(
+                    {
+                        "source": lyrics.source,
+                        "match_score": lyrics.match_score,
+                        "lyrics": lyrics.lyrics,
+                        "has_timestamps": lyrics.has_timestamps,
+                        "plain_lyrics": lyrics.plain_lyrics,
+                        "timestamped_lines": [
+                            {"timestamp": str(line.timestamp), "text": line.text}
+                            for line in lyrics.timestamped_lines
+                        ]
+                        if lyrics.has_timestamps
+                        else [],
+                    },
+                    f,
+                    ensure_ascii=False,
+                    indent=2,
+                )
 
             return lyrics_path
 

@@ -1,4 +1,5 @@
 """Content analysis and classification constants."""
+
 from enum import Enum
 from typing import List
 
@@ -6,10 +7,11 @@ from pydantic import BaseModel
 
 
 class ContentRating(str, Enum):
-    G = "G"           # General Audience
-    PG = "PG"         # Parental Guidance
-    PG13 = "PG-13"    # Parental Guidance 13+
-    R = "R"           # Restricted
+    G = "G"  # General Audience
+    PG = "PG"  # Parental Guidance
+    PG13 = "PG-13"  # Parental Guidance 13+
+    R = "R"  # Restricted
+
 
 class ContentWarning(str, Enum):
     VIOLENCE = "violence"
@@ -19,17 +21,20 @@ class ContentWarning(str, Enum):
     GANG_REFERENCES = "gang references"
     IMPLICIT_VIOLENCE = "implicit violence"
 
+
 class ProfanityType(str, Enum):
-    MILD = "mild"        # damn, hell, etc.
+    MILD = "mild"  # damn, hell, etc.
     MODERATE = "moderate"  # shit, ass, etc.
-    STRONG = "strong"    # f-word and stronger
-    SLUR = "slur"       # discriminatory terms
+    STRONG = "strong"  # f-word and stronger
+    SLUR = "slur"  # discriminatory terms
+
 
 class ProfanityReplacement(BaseModel):
     original: str
     clean_version: str
     profanity_type: ProfanityType
     semantic_role: str  # e.g., "intensifier", "noun", "expletive"
+
 
 # Theme Categories
 THEME_CATEGORIES: List[str] = [
@@ -56,5 +61,5 @@ THEME_CATEGORIES: List[str] = [
     "MATERIALISM",
     "AUTHENTICITY",
     "REPUTATION",
-    "ENTERTAINMENT"
+    "ENTERTAINMENT",
 ]
