@@ -91,7 +91,7 @@ async def test_analyze_fragment_multiple_units():
         content = json.loads(result["choices"][0]["message"]["content"])
         assert "semantic_units" in content
         assert len(content["semantic_units"]) == 2
-        assert content["semantic_units"][0]["text"] == "what she order"
+        assert content["semantic_units"][0]["text"] == "what she order?"
         assert content["semantic_units"][1]["text"] == "Fish fillet"
 
 

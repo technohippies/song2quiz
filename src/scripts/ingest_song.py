@@ -1,16 +1,18 @@
 """Script to ingest a song into the system."""
-from pathlib import Path
+
 import click
+
 from src.flows.ingestion.subflows import song_ingestion_flow
+
 
 @click.command()
 @click.option("--artist", required=True, help="Artist name")
 @click.option("--song", required=True, help="Song title")
-@click.option("--data-dir", 
-              default=str(Path(__file__).parent.parent.parent),
+@click.option("--data-dir",
+              default="data",
               help="Base path for data storage",
               type=click.Path(exists=True, file_okay=False, dir_okay=True))
-def main(artist: str, song: str, data_dir: str):
+def ingest_song_cli(artist: str, song: str, data_dir: str):
     """Ingest a song into the system."""
     print(f"Ingesting {song} by {artist}...")
     results = song_ingestion_flow(
@@ -18,7 +20,7 @@ def main(artist: str, song: str, data_dir: str):
         artist_name=artist,
         base_path=data_dir
     )
-    
+
     if results.get("song_path"):
         print(f"Successfully ingested song to {results['song_path']}")
     else:
@@ -26,4 +28,4 @@ def main(artist: str, song: str, data_dir: str):
         raise click.ClickException("Failed to ingest song")
 
 if __name__ == "__main__":
-    main()
+    ingest_song_cli()
