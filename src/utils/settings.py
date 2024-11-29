@@ -1,8 +1,9 @@
 """Application settings loaded from environment variables."""
+import logging
 import os
 from dataclasses import dataclass
+
 from dotenv import load_dotenv
-import logging
 
 # Load environment variables from .env file
 load_dotenv()

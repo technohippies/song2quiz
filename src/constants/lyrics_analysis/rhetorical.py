@@ -1,6 +1,7 @@
 """Rhetorical and semantic analysis constants."""
 from enum import Enum
 
+
 class RhetoricalDevice(str, Enum):
     DOUBLE_ENTENDRE = "DOUBLE_ENTENDRE"      # Words/phrases with multiple meanings
     ALLITERATION = "ALLITERATION"            # Repeated consonant sounds

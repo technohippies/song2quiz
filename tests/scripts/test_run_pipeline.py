@@ -1,5 +1,4 @@
-from pathlib import Path
-from unittest.mock import patch, AsyncMock
+from unittest.mock import AsyncMock, patch
 
 from click.testing import CliRunner
 
@@ -45,7 +44,7 @@ def test_run_pipeline_cli_all_steps(tmp_path, mock_genius):
         song_path = tmp_path / "songs" / "2236"
         song_path.parent.mkdir(parents=True, exist_ok=True)
         song_path.touch()
-        
+
         mock_ingest.return_value = {
             "song_path": str(song_path),
             "id": 2236,

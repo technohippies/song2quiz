@@ -1,5 +1,5 @@
 """JSON schemas for lyrics analysis validation."""
-from .linguistic import CEFRLevel, GrammaticalTense, SentenceType, ParentheticalType
+from .linguistic import CEFRLevel, GrammaticalTense, ParentheticalType, SentenceType
 from .rhetorical import RhetoricalDevice, SemanticLayer
 
 # Validation Schema
@@ -13,7 +13,7 @@ ANALYSIS_SCHEMA = {
         "clean_version",
         "grammar_patterns",
         "semantic_units",
-        "is_parenthetical", 
+        "is_parenthetical",
         "parenthetical_analysis",
     ],
     "properties": {

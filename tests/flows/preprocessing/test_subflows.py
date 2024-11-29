@@ -1,9 +1,7 @@
-import pytest
-from pathlib import Path
-from prefect.testing.utilities import prefect_test_harness
 import json
 
 from src.flows.preprocessing.subflows import process_song_annotations_flow
+
 
 def test_process_song_annotations_flow(tmp_path):
     """Test the preprocessing flow end-to-end"""
@@ -11,7 +9,7 @@ def test_process_song_annotations_flow(tmp_path):
     song_id = 2236
     song_dir = tmp_path / "data" / "songs" / str(song_id)
     song_dir.mkdir(parents=True)
-    
+
     # Create mock genius_annotations.json
     annotations = [{
         "id": 1,
@@ -27,10 +25,10 @@ def test_process_song_annotations_flow(tmp_path):
             }
         }]
     }]
-    
+
     with open(song_dir / "genius_annotations.json", "w") as f:
         json.dump(annotations, f)
-        
+
     # Create mock lyrics.json
     lyrics = {
         "timestamped_lines": [
@@ -38,13 +36,13 @@ def test_process_song_annotations_flow(tmp_path):
         ],
         "source": "test"
     }
-    
+
     with open(song_dir / "lyrics.json", "w") as f:
         json.dump(lyrics, f)
-    
+
     # Run the flow
     result = process_song_annotations_flow(song_id, base_path=tmp_path)
-    
+
     assert result is True
     assert (song_dir / "annotations_cleaned.json").exists()
     assert (song_dir / "lyrics_with_annotations.json").exists()

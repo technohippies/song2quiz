@@ -20,7 +20,7 @@ EXAMPLES = [
             ]
         }
     },
-    
+
     # Example 2: Two semantic units (question and answer)
     {
         "input": "what she order? Fish fillet?",

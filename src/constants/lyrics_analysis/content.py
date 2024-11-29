@@ -1,7 +1,9 @@
 """Content analysis and classification constants."""
-from typing import List
 from enum import Enum
+from typing import List
+
 from pydantic import BaseModel
+
 
 class ContentRating(str, Enum):
     G = "G"           # General Audience

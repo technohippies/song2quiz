@@ -1,6 +1,7 @@
 """Linguistic-related constants and enums."""
-from typing import List
 from enum import Enum
+from typing import List
+
 
 class CEFRLevel(str, Enum):
     A1 = "A1"  # Beginner

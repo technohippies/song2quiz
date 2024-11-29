@@ -1,5 +1,5 @@
 """System prompt for semantic units analysis."""
-from src.constants.lyrics_analysis.rhetorical import SemanticUnitType, SemanticLayer
+from src.constants.lyrics_analysis.rhetorical import SemanticLayer, SemanticUnitType
 
 VALID_UNIT_TYPES = ", ".join([unit_type.value for unit_type in SemanticUnitType])
 VALID_LAYERS = ", ".join([layer.value for layer in SemanticLayer])
@@ -13,7 +13,7 @@ SYSTEM_PROMPT = f"""You are an expert linguist and cultural analyst specializing
    - Provide the literal or surface meaning
    - List semantic layers from these valid types: {VALID_LAYERS}
    - Include detailed annotations explaining references and significance
-   
+
 4. Focus on these aspects:
    - Cultural references and allusions
    - Double meanings and wordplay

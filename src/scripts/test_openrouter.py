@@ -2,6 +2,7 @@
 import asyncio
 import json
 import logging
+
 from src.services.openrouter import OpenRouterClient
 
 # Set up logging
@@ -12,16 +13,16 @@ async def test_api():
     """Test a simple API call."""
     try:
         client = OpenRouterClient(task_type="vocabulary")
-        
+
         # Simple test prompt
         prompt = """Analyze ONLY the non-standard vocabulary in this lyric and return a raw JSON object:
 'I'm finna pull up in that new whip'
 
-IMPORTANT: 
+IMPORTANT:
 1. Do not include basic English words like "new"
 2. Do not wrap the response in markdown code blocks
 3. Return only the raw JSON"""
-        
+
         system_prompt = """You are an expert linguist specializing in vocabulary analysis. You MUST follow these rules exactly:
 
 1. Return ONLY a raw JSON object - no markdown, no ```json blocks, no additional text
@@ -54,7 +55,7 @@ The response must be this exact JSON structure with no wrapping:
     }
   ]
 }"""
-        
+
         logger.info("Making API call...")
         result = await client.complete(
             prompt=prompt,
@@ -62,10 +63,10 @@ The response must be this exact JSON structure with no wrapping:
             temperature=0.3,
             max_tokens=1024
         )
-        
+
         logger.info(f"Raw result: {json.dumps(result, indent=2)}")
         return result
-        
+
     except Exception as e:
         logger.error(f"Error: {str(e)}")
         return None
@@ -76,4 +77,4 @@ if __name__ == "__main__":
         print("\nSuccess! Result:")
         print(json.dumps(result, indent=2))
     else:
-        print("\nFailed to get response") 
+        print("\nFailed to get response")

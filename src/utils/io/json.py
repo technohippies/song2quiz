@@ -3,15 +3,16 @@ import json
 from pathlib import Path
 from typing import Any, Union
 
+
 def load_json(path: Union[str, Path]) -> Any:
     """Load data from a JSON file.
-    
+
     Args:
         path: Path to JSON file
-        
+
     Returns:
         Loaded JSON data
-        
+
     Raises:
         FileNotFoundError: If file doesn't exist
         json.JSONDecodeError: If JSON is invalid
@@ -21,11 +22,11 @@ def load_json(path: Union[str, Path]) -> Any:
 
 def save_json(path: Union[str, Path], data: Any) -> None:
     """Save data to a JSON file.
-    
+
     Args:
         path: Path to save JSON file
         data: Data to save
-        
+
     Raises:
         TypeError: If data is not JSON serializable
     """

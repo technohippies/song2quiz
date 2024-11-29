@@ -1,7 +1,7 @@
 """OpenRouter API client."""
+import asyncio
 import logging
 from typing import Any, Dict, List, Optional
-import asyncio
 
 import httpx
 
@@ -73,7 +73,7 @@ class OpenRouterAPI:
             model = self._select_model(task_type, fallback_model)
             if not model:
                 raise OpenRouterAPIError(f"No model found for task type: {task_type}") from None
-            
+
             request_data = {
                 "model": model,
                 "messages": messages,
@@ -84,13 +84,13 @@ class OpenRouterAPI:
             logger.info(f"OpenRouter API Request to {self.base_url}/chat/completions:")
             logger.info(f"Headers: {self.headers}")
             logger.info(f"Request Data: {request_data}")
-            
+
             response = await self.client.post(
                 f"{self.base_url}/chat/completions",
                 headers=self.headers,
                 json=request_data
             )
-            
+
             try:
                 response.raise_for_status()
             except httpx.HTTPError as e:
@@ -124,7 +124,7 @@ class OpenRouterAPI:
                         fallback_model=fallback
                     )
                 raise OpenRouterAPIError(f"HTTP error occurred: {str(e)}") from e
-            
+
             try:
                 response_data = response.json()
                 logger.info(f"OpenRouter API Raw Response: {response_data}")
