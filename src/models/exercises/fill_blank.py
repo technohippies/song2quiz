@@ -10,46 +10,58 @@ class ErrorType(Enum):
     REGISTER = "REGISTER"
     GRAMMAR = "GRAMMAR"
 
+
 @dataclass
 class Option:
     """A single option for a fill-in-blank exercise"""
+
     word: str
     explanation: str
     error_type: ErrorType
     is_correct: bool
 
+
 @dataclass
 class SemanticUnit:
     """Represents semantic analysis of a phrase"""
+
     text: str
     type: str
     meaning: str
     normalized_forms: List[str]
     layers: List[str]  # Could be expanded to a more specific type if needed
 
+
 @dataclass
 class Annotation:
     """Genius annotation data"""
+
     id: int
     fragment: str
     annotation_text: str
 
+
 @dataclass
 class SemanticContext:
     """Combined semantic analysis and annotation"""
+
     semantic_unit: SemanticUnit
     annotation: Annotation
+
 
 @dataclass
 class ExerciseMetadata:
     """Metadata for a fill-in-blank exercise"""
+
     timestamp: datetime
     contains_explicit: bool
     semantic_context: SemanticContext
 
+
 @dataclass
 class FillBlankExercise:
     """A complete fill-in-blank exercise"""
+
     text: str
     target_word: str
     options: List[Option]

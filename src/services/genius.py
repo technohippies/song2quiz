@@ -18,6 +18,7 @@ load_dotenv()
 
 logger = logging.getLogger(__name__)
 
+
 class GeniusAPI:
     """Client for the Genius API with rate limiting and error handling"""
 
@@ -40,7 +41,7 @@ class GeniusAPI:
             "Accept": "application/json",
             "User-Agent": "song2quiz/1.0",
             "Host": "api.genius.com",
-            "Authorization": f"Bearer {api_token}"
+            "Authorization": f"Bearer {api_token}",
         }
         logger.debug("Initialized GeniusAPI client")
 
@@ -66,7 +67,9 @@ class GeniusAPI:
 
         url = f"{self.base_url}/{endpoint}"
         try:
-            response = requests.get(url, headers=self.headers, params=params, timeout=10)
+            response = requests.get(
+                url, headers=self.headers, params=params, timeout=10
+            )
             self.last_request_time = time.time()
 
             response.raise_for_status()
@@ -100,8 +103,7 @@ class GeniusAPI:
         try:
             # Search for the song
             search_results = self._make_request(
-                "search",
-                params={"q": f"{song_name} {artist_name}"}
+                "search", params={"q": f"{song_name} {artist_name}"}
             )
 
             # Get all matching songs
@@ -111,9 +113,11 @@ class GeniusAPI:
             # Split artist name for multiple artists
             artist_parts = []
             # Handle different separators
-            for separator in ['_', '&', 'and', ',']:
+            for separator in ["_", "&", "and", ","]:
                 if separator in artist_name:
-                    artist_parts.extend([part.strip().lower() for part in artist_name.split(separator)])
+                    artist_parts.extend(
+                        [part.strip().lower() for part in artist_name.split(separator)]
+                    )
 
             # If no separators found, use the whole name
             if not artist_parts:
@@ -139,14 +143,20 @@ class GeniusAPI:
                         matches.append(full_song_data)
 
             if not matches:
-                logger.warning(f"No matching songs found for {song_name} by {artist_name}")
+                logger.warning(
+                    f"No matching songs found for {song_name} by {artist_name}"
+                )
                 return None
 
             # Sort by pageviews and return the most popular
-            matches.sort(key=lambda x: x.get("stats", {}).get("pageviews", 0), reverse=True)
+            matches.sort(
+                key=lambda x: x.get("stats", {}).get("pageviews", 0), reverse=True
+            )
             chosen_song = matches[0]
 
-            logger.info(f"Selected '{chosen_song['title']}' with {chosen_song['stats'].get('pageviews', 0)} pageviews")
+            logger.info(
+                f"Selected '{chosen_song['title']}' with {chosen_song['stats'].get('pageviews', 0)} pageviews"
+            )
             return GeniusMetadata.from_dict(chosen_song)
 
         except Exception as e:
@@ -161,19 +171,17 @@ class GeniusAPI:
         try:
             data = self._make_request(
                 "referents",
-                params={
-                    "song_id": song_id,
-                    "text_format": "dom",
-                    "per_page": 50
-                }
+                params={"song_id": song_id, "text_format": "dom", "per_page": 50},
             )
-            return data.get('response', {}).get('referents', [])
+            return data.get("response", {}).get("referents", [])
 
         except Exception as e:
             logger.error(f"Error fetching annotations: {str(e)}")
             return []
 
-    def save_song_metadata(self, metadata: GeniusMetadata, base_path: str) -> Optional[Path]:
+    def save_song_metadata(
+        self, metadata: GeniusMetadata, base_path: str
+    ) -> Optional[Path]:
         """
         Save song metadata to the appropriate folder structure
 
@@ -205,7 +213,7 @@ class GeniusAPI:
 
             # Save metadata
             metadata_path = song_path / "genius_metadata.json"
-            with open(metadata_path, 'w', encoding='utf-8') as f:
+            with open(metadata_path, "w", encoding="utf-8") as f:
                 json.dump(metadata.to_dict(), f, ensure_ascii=False, indent=2)
 
             # If this is part of an album, update album metadata
@@ -235,20 +243,22 @@ class GeniusAPI:
 
             # Load existing album data if it exists
             if album_file.exists():
-                with open(album_file, 'r', encoding='utf-8') as f:
+                with open(album_file, "r", encoding="utf-8") as f:
                     album_data = json.load(f)
 
             # Update album metadata
-            album_data.update({
-                'genius_album_id': metadata.album.id,
-                'title': metadata.album.name,
-                'artist_name': metadata.primary_artist_names,
-                'release_date': metadata.album.release_date_for_display,
-                'cover_art_url': metadata.album.cover_art_url
-            })
+            album_data.update(
+                {
+                    "genius_album_id": metadata.album.id,
+                    "title": metadata.album.name,
+                    "artist_name": metadata.primary_artist_names,
+                    "release_date": metadata.album.release_date_for_display,
+                    "cover_art_url": metadata.album.cover_art_url,
+                }
+            )
 
             # Save updated album data
-            with open(album_file, 'w', encoding='utf-8') as f:
+            with open(album_file, "w", encoding="utf-8") as f:
                 json.dump(album_data, f, ensure_ascii=False, indent=2)
 
         except Exception as e:

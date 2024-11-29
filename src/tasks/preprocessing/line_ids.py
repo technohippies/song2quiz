@@ -1,4 +1,5 @@
 """Task for generating deterministic line IDs."""
+
 import hashlib
 import json
 import logging
@@ -7,6 +8,7 @@ from pathlib import Path
 from prefect import task
 
 logger = logging.getLogger(__name__)
+
 
 def get_line_id(text: str) -> str:
     """Generate deterministic ID for a line of text.
@@ -18,6 +20,7 @@ def get_line_id(text: str) -> str:
         First 8 characters of SHA-256 hash of text
     """
     return hashlib.sha256(text.encode()).hexdigest()[:8]
+
 
 @task(name="add_line_ids")
 def add_line_ids(song_path: Path) -> bool:

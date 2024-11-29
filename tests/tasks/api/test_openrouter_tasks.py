@@ -58,9 +58,7 @@ def mock_openrouter():
 @pytest.mark.asyncio()
 async def test_complete_prompt_success(mock_openrouter):
     """Test successful prompt completion"""
-    mock_openrouter.return_value = {
-        "vocabulary": [{"term": "test"}]
-    }
+    mock_openrouter.return_value = {"vocabulary": [{"term": "test"}]}
     # ... rest of test
 
 
@@ -72,26 +70,28 @@ async def test_complete_prompt_invalid_json():
         mock_response = MagicMock()
         mock_response.status_code = 200
         mock_response.json.return_value = {
-            "choices": [{
-                "message": {
-                    "content": "{\n  \"prompt_test\": \"This is a test prompt.\"\n}",
-                    "role": "assistant"
+            "choices": [
+                {
+                    "message": {
+                        "content": '{\n  "prompt_test": "This is a test prompt."\n}',
+                        "role": "assistant",
+                    }
                 }
-            }]
+            ]
         }
         mock_post.return_value = mock_response
 
         result = await complete_openrouter_prompt(
             formatted_prompt="test prompt",
             system_prompt="You are a test assistant",
-            task_type="default"
+            task_type="default",
         )
         assert result is not None
         assert "choices" in result
         assert len(result["choices"]) > 0
         assert "message" in result["choices"][0]
         assert "content" in result["choices"][0]["message"]
-        expected_content = "{\n  \"prompt_test\": \"This is a test prompt.\"\n}"
+        expected_content = '{\n  "prompt_test": "This is a test prompt."\n}'
         assert result["choices"][0]["message"]["content"] == expected_content
 
 
@@ -106,7 +106,7 @@ async def test_complete_prompt_error():
             await complete_openrouter_prompt(
                 formatted_prompt="test prompt",
                 system_prompt="You are a test assistant",
-                task_type="default"
+                task_type="default",
             )
         assert "HTTP error occurred" in str(exc_info.value)
         assert "Internal Server Error" in str(exc_info.value)

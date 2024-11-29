@@ -20,26 +20,27 @@ def update_song_catalog(results: dict, base_path: str):
 
     # Initialize empty catalog if file doesn't exist
     if not catalog_path.exists():
-        with open(catalog_path, 'w') as f:
+        with open(catalog_path, "w") as f:
             json.dump([], f, indent=4)
 
     # Read existing catalog
-    with open(catalog_path, 'r') as f:
+    with open(catalog_path, "r") as f:
         try:
             catalog = json.load(f)
         except json.JSONDecodeError:
             catalog = []
 
     # Check if song already exists in catalog by song ID
-    song_exists = any(song.get('id') == results['id'] for song in catalog)
+    song_exists = any(song.get("id") == results["id"] for song in catalog)
 
     if not song_exists:
         # Only append if song doesn't exist
         catalog.append(results)
 
         # Write updated catalog
-        with open(catalog_path, 'w') as f:
+        with open(catalog_path, "w") as f:
             json.dump(catalog, f, indent=4)
+
 
 @task(name="Copy to Songs Directory")
 def copy_to_songs_dir(song_path: str, base_path: str):
@@ -61,17 +62,19 @@ def copy_to_songs_dir(song_path: str, base_path: str):
     else:
         logger.error(f"Source path does not exist: {source_path}")
 
+
 @task
 def ensure_song_directory(base_path: str) -> str:
     songs_dir = os.path.join(base_path, "songs")
     os.makedirs(songs_dir, exist_ok=True)
     return songs_dir
 
+
 @flow(name="Song Ingestion")
 def song_ingestion_flow(
     song_name: str,
     artist_name: str,
-    base_path: str = str(Path(__file__).parent.parent.parent.parent)
+    base_path: str = str(Path(__file__).parent.parent.parent.parent),
 ) -> Dict:
     logger = get_run_logger()
     logger.info(f"Starting ingestion for {song_name} by {artist_name}")
@@ -92,7 +95,7 @@ def song_ingestion_flow(
 
     # Save metadata
     metadata_path = song_path / "genius_metadata.json"
-    with open(metadata_path, 'w', encoding='utf-8') as f:
+    with open(metadata_path, "w", encoding="utf-8") as f:
         json.dump(metadata.to_dict(), f, ensure_ascii=False, indent=2)
 
     results = {
@@ -104,14 +107,14 @@ def song_ingestion_flow(
         "song_name": song_name,
         "artist_name": artist_name,
         "primary_artist_names": metadata.primary_artist_names,
-        "id": metadata.id
+        "id": metadata.id,
     }
 
     # Get annotations
     annotations = genius.get_song_annotations(metadata.id)
     if annotations:
         annotations_path = song_path / "genius_annotations.json"
-        with open(annotations_path, 'w', encoding='utf-8') as f:
+        with open(annotations_path, "w", encoding="utf-8") as f:
             json.dump(annotations, f, ensure_ascii=False, indent=2)
         results["annotations_path"] = str(annotations_path)
 
@@ -119,7 +122,7 @@ def song_ingestion_flow(
     lyrics = lrclib.search_lyrics(song_name, artist_name)
     if lyrics:
         lyrics_path = song_path / "lyrics.json"
-        with open(lyrics_path, 'w', encoding='utf-8') as f:
+        with open(lyrics_path, "w", encoding="utf-8") as f:
             json.dump(lyrics.to_dict(), f, ensure_ascii=False, indent=2)
         results["lyrics_path"] = str(lyrics_path)
 

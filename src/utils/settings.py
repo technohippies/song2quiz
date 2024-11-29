@@ -1,4 +1,5 @@
 """Application settings loaded from environment variables."""
+
 import logging
 import os
 from dataclasses import dataclass
@@ -10,9 +11,11 @@ load_dotenv()
 
 logger = logging.getLogger(__name__)
 
+
 @dataclass
 class Settings:
     """Application settings."""
+
     OPENROUTER_API_KEY: str = os.getenv("OPENROUTER_API_KEY", "")
     LANGFUSE_PUBLIC_KEY: str = os.getenv("LANGFUSE_PUBLIC_KEY", "")
     LANGFUSE_SECRET_KEY: str = os.getenv("LANGFUSE_SECRET_KEY", "")
@@ -25,5 +28,6 @@ class Settings:
             logger.warning("LANGFUSE_PUBLIC_KEY not set")
         if not self.LANGFUSE_SECRET_KEY:
             logger.warning("LANGFUSE_SECRET_KEY not set")
+
 
 settings = Settings()

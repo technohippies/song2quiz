@@ -1,4 +1,5 @@
 """Task for analyzing semantic units in lyrics."""
+
 import asyncio
 import json
 import logging
@@ -15,45 +16,62 @@ logger = logging.getLogger(__name__)
 
 BATCH_SIZE = 20
 
+
 def format_prompt(examples: List[Dict[str, Any]], line: str) -> str:
     """Format prompt with examples."""
-    examples_text = "\n\n".join([
-        f"Input: {ex['input']}\nOutput: {json.dumps(ex['output'], indent=2)}"
-        for ex in examples[:2]  # Use first 2 examples
-    ])
+    examples_text = "\n\n".join(
+        [
+            f"Input: {ex['input']}\nOutput: {json.dumps(ex['output'], indent=2)}"
+            for ex in examples[:2]  # Use first 2 examples
+        ]
+    )
 
     return f"{SYSTEM_PROMPT}\n\nHere are some examples:\n{examples_text}\n\nNow analyze this line:\n{line}"
 
-@task(name="analyze_fragment",
-      retries=3,
-      retry_delay_seconds=2)
-async def analyze_fragment(fragment: Dict[str, str], index: int, total: int) -> Optional[Dict[str, Any]]:
+
+@task(name="analyze_fragment", retries=3, retry_delay_seconds=2)
+async def analyze_fragment(
+    fragment: Dict[str, str], index: int, total: int
+) -> Optional[Dict[str, Any]]:
     """Analyze a single fragment for semantic units."""
     log = get_run_logger()
     try:
         # Format prompt with examples
-        prompt = format_prompt(EXAMPLES, fragment['text'])
+        prompt = format_prompt(EXAMPLES, fragment["text"])
 
-        response = await complete_openrouter_prompt(
-            formatted_prompt=prompt,
-            system_prompt="",  # System prompt included in formatted prompt
-            task_type="analysis",
-            temperature=0.1
-        )
+        for attempt in range(3):  # Try up to 3 times
+            try:
+                response = await complete_openrouter_prompt(
+                    formatted_prompt=prompt,
+                    system_prompt="",  # System prompt included in formatted prompt
+                    task_type="analysis",
+                    temperature=0.1,
+                )
 
-        if not response:
-            log.error(f"[{index}/{total}] Invalid API response")
-            return None
+                if not response:
+                    log.error(f"[{index}/{total}] Invalid API response")
+                    return None
 
-        return response
+                return response
+
+            except Exception as e:
+                if "rate limit exceeded" in str(e).lower():
+                    if attempt < 2:  # If not the last attempt
+                        delay = 2**attempt  # Exponential backoff: 1s, 2s, 4s
+                        log.warning(
+                            f"Rate limit hit, retrying in {delay}s (attempt {attempt + 1}/3)"
+                        )
+                        await asyncio.sleep(delay)
+                        continue
+                log.error(f"[{index}/{total}] Error analyzing fragment: {e}")
+                return None
 
     except Exception as e:
         log.error(f"[{index}/{total}] Error analyzing fragment: {e}")
         return None
 
-@task(name="analyze_song_semantic_units",
-      retries=3,
-      retry_delay_seconds=2)
+
+@task(name="analyze_song_semantic_units", retries=3, retry_delay_seconds=2)
 async def analyze_song_semantic_units(song_path: str) -> Optional[Dict[str, Any]]:
     """Analyze semantic units for a song."""
     log = get_run_logger()
@@ -78,12 +96,15 @@ async def analyze_song_semantic_units(song_path: str) -> Optional[Dict[str, Any]
         total = len(fragments)
 
         for i in range(0, total, BATCH_SIZE):
-            batch = fragments[i:i + BATCH_SIZE]
-            batch_tasks = [analyze_fragment(f, idx, total)
-                         for idx, f in enumerate(batch, i + 1)]
+            batch = fragments[i : i + BATCH_SIZE]
+            batch_tasks = [
+                analyze_fragment(f, idx, total) for idx, f in enumerate(batch, i + 1)
+            ]
             batch_results = await asyncio.gather(*batch_tasks)
             results.extend([r for r in batch_results if r])
-            log.info(f"✓ Processed batch {i//BATCH_SIZE + 1} ({i+1}-{min(i+BATCH_SIZE, total)})")
+            log.info(
+                f"✓ Processed batch {i//BATCH_SIZE + 1} ({i+1}-{min(i+BATCH_SIZE, total)})"
+            )
 
         if not results:
             log.error("No valid results from analysis")

@@ -1,4 +1,5 @@
 """JSON schemas for lyrics analysis validation."""
+
 from .linguistic import CEFRLevel, GrammaticalTense, ParentheticalType, SentenceType
 from .rhetorical import RhetoricalDevice, SemanticLayer
 
@@ -22,7 +23,7 @@ ANALYSIS_SCHEMA = {
         "is_parenthetical": {"type": "boolean"},
         "standardized_american_english_without_parens": {
             "type": "string",
-            "description": "Only present when is_parenthetical is true"
+            "description": "Only present when is_parenthetical is true",
         },
         "parenthetical_analysis": {
             "type": "object",
@@ -30,38 +31,29 @@ ANALYSIS_SCHEMA = {
             "properties": {
                 "type": {
                     "type": "string",
-                    "enum": [ptype.value for ptype in ParentheticalType]
+                    "enum": [ptype.value for ptype in ParentheticalType],
                 },
                 "content": {"type": "string"},
                 "context": {"type": "string"},
                 "related_lyrics": {
                     "type": "array",
                     "items": {"type": "string"},
-                    "description": "Lines of lyrics that this parenthetical content relates to"
-                }
-            }
+                    "description": "Lines of lyrics that this parenthetical content relates to",
+                },
+            },
         },
-        "proper_nouns": {
-            "type": "array",
-            "items": {"type": "string"}
-        },
+        "proper_nouns": {"type": "array", "items": {"type": "string"}},
         "content_analysis": {
             "type": "object",
             "required": ["themes", "cultural_references", "difficulty_level"],
             "properties": {
-                "themes": {
-                    "type": "array",
-                    "items": {"type": "string"}
-                },
-                "cultural_references": {
-                    "type": "array",
-                    "items": {"type": "string"}
-                },
+                "themes": {"type": "array", "items": {"type": "string"}},
+                "cultural_references": {"type": "array", "items": {"type": "string"}},
                 "difficulty_level": {
                     "type": "string",
-                    "enum": [level.value for level in CEFRLevel]
-                }
-            }
+                    "enum": [level.value for level in CEFRLevel],
+                },
+            },
         },
         "grammar_patterns": {
             "type": "object",
@@ -69,17 +61,14 @@ ANALYSIS_SCHEMA = {
             "properties": {
                 "tense": {
                     "type": "string",
-                    "enum": [tense.value for tense in GrammaticalTense]
+                    "enum": [tense.value for tense in GrammaticalTense],
                 },
                 "sentence_type": {
                     "type": "string",
-                    "enum": [stype.value for stype in SentenceType]
+                    "enum": [stype.value for stype in SentenceType],
                 },
-                "structures": {
-                    "type": "array",
-                    "items": {"type": "string"}
-                }
-            }
+                "structures": {"type": "array", "items": {"type": "string"}},
+            },
         },
         "rhetorical_analysis": {
             "type": "object",
@@ -93,12 +82,12 @@ ANALYSIS_SCHEMA = {
                         "properties": {
                             "type": {
                                 "type": "string",
-                                "enum": [device.value for device in RhetoricalDevice]
+                                "enum": [device.value for device in RhetoricalDevice],
                             },
                             "text": {"type": "string"},
-                            "explanation": {"type": "string"}
-                        }
-                    }
+                            "explanation": {"type": "string"},
+                        },
+                    },
                 },
                 "semantic_layers": {
                     "type": "array",
@@ -108,14 +97,14 @@ ANALYSIS_SCHEMA = {
                         "properties": {
                             "layer": {
                                 "type": "string",
-                                "enum": [layer.value for layer in SemanticLayer]
+                                "enum": [layer.value for layer in SemanticLayer],
                             },
                             "meaning": {"type": "string"},
-                            "context": {"type": "string"}
-                        }
-                    }
-                }
-            }
-        }
-    }
+                            "context": {"type": "string"},
+                        },
+                    },
+                },
+            },
+        },
+    },
 }

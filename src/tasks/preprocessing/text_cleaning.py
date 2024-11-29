@@ -1,4 +1,5 @@
 """Prefect tasks for text cleaning operations."""
+
 import json
 import logging
 from pathlib import Path
@@ -13,6 +14,7 @@ from src.utils.cleaning.text import (
 )
 
 logger = logging.getLogger(__name__)
+
 
 @task(name="process_annotations")
 def process_annotations(song_path: Path) -> bool:
@@ -29,7 +31,7 @@ def process_annotations(song_path: Path) -> bool:
         cleaned_annotations = []
         for ann in annotations:
             try:
-                raw_text = extract_text_from_dom(ann['annotations'][0]['body']['dom'])
+                raw_text = extract_text_from_dom(ann["annotations"][0]["body"]["dom"])
                 annotation_text = clean_annotation_text(raw_text)
                 fragment = clean_fragment(ann["fragment"])
 
@@ -41,7 +43,7 @@ def process_annotations(song_path: Path) -> bool:
                 cleaned_ann = {
                     "id": ann["id"],
                     "fragment": fragment,
-                    "annotation_text": annotation_text
+                    "annotation_text": annotation_text,
                 }
                 cleaned_annotations.append(cleaned_ann)
 
@@ -50,10 +52,12 @@ def process_annotations(song_path: Path) -> bool:
                 continue  # Skip this annotation but continue processing others
 
         output_file = song_path / "annotations_cleaned.json"
-        with open(output_file, 'w', encoding='utf-8') as f:
+        with open(output_file, "w", encoding="utf-8") as f:
             json.dump(cleaned_annotations, f, ensure_ascii=False, indent=2)
 
-        logger.info(f"Processed {len(cleaned_annotations)} annotations for {song_path.name}")
+        logger.info(
+            f"Processed {len(cleaned_annotations)} annotations for {song_path.name}"
+        )
         return True
 
     except Exception as e:

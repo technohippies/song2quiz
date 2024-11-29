@@ -13,17 +13,18 @@ def test_preprocess_song_cli_with_id(tmp_path):
     data_dir = tmp_path / "data"
     data_dir.mkdir(parents=True)
 
-    with patch('src.flows.preprocessing.subflows.process_song_annotations_flow') as mock_flow:
+    with patch(
+        "src.flows.preprocessing.subflows.process_song_annotations_flow"
+    ) as mock_flow:
         mock_flow.return_value = True  # Mock successful preprocessing
 
         result = runner.invoke(
-            preprocess_cli,
-            ['--song-id', '2236',
-             '--data-dir', str(tmp_path)]
+            preprocess_cli, ["--song-id", "2236", "--data-dir", str(tmp_path)]
         )
 
         assert result.exit_code == 0
         mock_flow.assert_called_once_with(song_id=2236, base_path=str(tmp_path))
+
 
 def test_preprocess_song_cli_with_name(tmp_path):
     """Test preprocessing with song name and artist"""
@@ -34,19 +35,24 @@ def test_preprocess_song_cli_with_name(tmp_path):
     song_dir.mkdir(parents=True)
     with open(song_dir / "genius_metadata.json", "w") as f:
         import json
-        json.dump({
-            "title": "Yesterday",
-            "artist": "The Beatles"
-        }, f)
 
-    with patch('src.flows.preprocessing.subflows.process_song_annotations_flow') as mock_flow:
+        json.dump({"title": "Yesterday", "artist": "The Beatles"}, f)
+
+    with patch(
+        "src.flows.preprocessing.subflows.process_song_annotations_flow"
+    ) as mock_flow:
         mock_flow.return_value = True
 
         result = runner.invoke(
             preprocess_cli,
-            ['--song', 'Yesterday',
-             '--artist', 'The Beatles',
-             '--data-dir', str(tmp_path)]
+            [
+                "--song",
+                "Yesterday",
+                "--artist",
+                "The Beatles",
+                "--data-dir",
+                str(tmp_path),
+            ],
         )
 
         assert result.exit_code == 0

@@ -1,4 +1,5 @@
 """Core text cleaning utilities."""
+
 import json
 import logging
 import re
@@ -11,9 +12,12 @@ from src.constants.lyrics_analysis.linguistic import ParentheticalType
 
 logger = logging.getLogger(__name__)
 
+
 class TextCleaningError(Exception):
     """Custom exception for text cleaning errors."""
+
     pass
+
 
 def classify_parenthetical(content: str) -> ParentheticalType:
     """Classify the type of parenthetical content.
@@ -31,7 +35,10 @@ def classify_parenthetical(content: str) -> ParentheticalType:
         return ParentheticalType.ADLIB
 
     # Background vocals often have descriptive terms
-    if any(term in content for term in ["backing", "background", "vocals", "harmonies", "chorus"]):
+    if any(
+        term in content
+        for term in ["backing", "background", "vocals", "harmonies", "chorus"]
+    ):
         return ParentheticalType.BACKGROUND
 
     # Sound effects often describe sounds
@@ -55,10 +62,13 @@ def classify_parenthetical(content: str) -> ParentheticalType:
         return ParentheticalType.TRANSLATION
 
     # Clarifications often explain context
-    if any(term in content for term in ["referring", "means", "i.e.", "aka", "meaning"]):
+    if any(
+        term in content for term in ["referring", "means", "i.e.", "aka", "meaning"]
+    ):
         return ParentheticalType.CLARIFICATION
 
     return ParentheticalType.OTHER
+
 
 def extract_parentheticals(text: str) -> Tuple[str, List[Dict[str, Any]]]:
     """Extract and classify content in parentheses from text, including nested parentheses.
@@ -98,28 +108,27 @@ def extract_parentheticals(text: str) -> Tuple[str, List[Dict[str, Any]]]:
         parentheticals = []
         clean_text = text
 
-        while '(' in clean_text:
+        while "(" in clean_text:
             # Find the next outermost pair
             stack = []
             start = -1
             found_pair = False
 
             for i, char in enumerate(clean_text):
-                if char == '(':
+                if char == "(":
                     if not stack:
                         start = i
                     stack.append(i)
-                elif char == ')':
+                elif char == ")":
                     if stack:
                         stack.pop()
                         if not stack:  # Found complete outermost pair
-                            content = clean_text[start + 1:i]
+                            content = clean_text[start + 1 : i]
                             ptype = classify_parenthetical(content)
-                            parentheticals.append({
-                                "content": content,
-                                "type": ptype.value
-                            })
-                            clean_text = clean_text[:start] + clean_text[i + 1:]
+                            parentheticals.append(
+                                {"content": content, "type": ptype.value}
+                            )
+                            clean_text = clean_text[:start] + clean_text[i + 1 :]
                             found_pair = True
                             break
 
@@ -129,8 +138,10 @@ def extract_parentheticals(text: str) -> Tuple[str, List[Dict[str, Any]]]:
                 break
 
         # Clean up extra whitespace and fix comma spacing
-        clean_text = re.sub(r'\s+', ' ', clean_text).strip()
-        clean_text = re.sub(r'\s*,\s*', ', ', clean_text)  # Ensure exactly one space after comma
+        clean_text = re.sub(r"\s+", " ", clean_text).strip()
+        clean_text = re.sub(
+            r"\s*,\s*", ", ", clean_text
+        )  # Ensure exactly one space after comma
 
         return clean_text, parentheticals
 
@@ -138,6 +149,7 @@ def extract_parentheticals(text: str) -> Tuple[str, List[Dict[str, Any]]]:
         if isinstance(e, TextCleaningError):
             raise
         raise TextCleaningError(f"Failed to extract parentheticals: {str(e)}") from e
+
 
 def clean_text(text: str) -> str:
     """Clean text using ftfy and other cleaning methods."""
@@ -148,17 +160,18 @@ def clean_text(text: str) -> str:
     except Exception as e:
         raise TextCleaningError(f"Failed to clean text: {str(e)}") from e
 
+
 def clean_annotation_text(text: str) -> str:
     """Clean annotation text more thoroughly while preserving newlines."""
     try:
         # First handle any HTML line breaks by converting to newlines
-        text = re.sub(r'<br\s*/?>', '\n', text, flags=re.IGNORECASE)
+        text = re.sub(r"<br\s*/?>", "\n", text, flags=re.IGNORECASE)
 
         # Initial quote uncurling
         text = uncurl_quotes(text)
 
         # Split on all possible newline variants
-        lines = re.split(r'[\n\r\u2028\u2029]+', text)
+        lines = re.split(r"[\n\r\u2028\u2029]+", text)
         cleaned_lines = []
 
         for line in lines:
@@ -168,8 +181,7 @@ def clean_annotation_text(text: str) -> str:
             # Handle punctuation spacing
             patterns = [
                 # Fix spacing around punctuation
-                (r'\s+([.,!?:;])\s*', r'\1 '),
-
+                (r"\s+([.,!?:;])\s*", r"\1 "),
                 # Make sure contractions are tight
                 (r"(\w)\s+'(\w)", r"\1'\2"),  # e.g., "don' t" -> "don't"
                 (r"(\w)'\s+(\w)", r"\1'\2"),  # e.g., "don 't" -> "don't"
@@ -179,32 +191,34 @@ def clean_annotation_text(text: str) -> str:
                 line = re.sub(pattern, replacement, line)
 
             # Clean up extra whitespace within the line only
-            line = ' '.join(line.split())
+            line = " ".join(line.split())
             cleaned_lines.append(line)
 
         # Join lines back together with newlines, preserving empty lines
-        return '\n'.join(cleaned_lines)
+        return "\n".join(cleaned_lines)
 
     except Exception as e:
         raise TextCleaningError(f"Failed to clean annotation text: {str(e)}") from e
+
 
 def clean_fragment(fragment: str) -> str:
     """Clean annotation fragment while preserving newlines."""
     try:
         fragment = uncurl_quotes(fragment)
         fragment = fix_text(fragment)
-        fragment = re.sub(r'\[.*?\]', '', fragment)
+        fragment = re.sub(r"\[.*?\]", "", fragment)
 
-        lines = re.split(r'[\n\r\u2028\u2029]+', fragment)
+        lines = re.split(r"[\n\r\u2028\u2029]+", fragment)
         cleaned_lines = []
         for line in lines:
-            line = ' '.join(line.split())
+            line = " ".join(line.split())
             if line:  # Only add non-empty lines
                 cleaned_lines.append(line)
 
-        return '\n'.join(cleaned_lines).strip()
+        return "\n".join(cleaned_lines).strip()
     except Exception as e:
         raise TextCleaningError(f"Failed to clean fragment: {str(e)}") from e
+
 
 def extract_text_from_dom(dom: Dict[str, Any]) -> str:
     """Extract plain text from Genius DOM structure, preserving newlines."""
@@ -217,8 +231,8 @@ def extract_text_from_dom(dom: Dict[str, Any]) -> str:
             elif isinstance(node, dict):
                 # Add newline for block elements
                 if node.get("tag") in {"p", "div", "br"}:
-                    if text and not text[-1].endswith('\n'):
-                        text.append('\n')
+                    if text and not text[-1].endswith("\n"):
+                        text.append("\n")
 
                 # Process children
                 if "children" in node:
@@ -227,13 +241,14 @@ def extract_text_from_dom(dom: Dict[str, Any]) -> str:
 
                 # Add newline after block elements
                 if node.get("tag") in {"p", "div"}:
-                    if text and not text[-1].endswith('\n'):
-                        text.append('\n')
+                    if text and not text[-1].endswith("\n"):
+                        text.append("\n")
 
         process_node(dom)
-        return ''.join(text).strip()
+        return "".join(text).strip()
     except Exception as e:
         raise TextCleaningError(f"Failed to extract text from DOM: {str(e)}") from e
+
 
 def clean_json_array(array_content: str) -> str:
     """Clean array content by removing explanatory text in parentheses."""
@@ -242,15 +257,15 @@ def clean_json_array(array_content: str) -> str:
     in_quotes = False
 
     for char in array_content:
-        if char == '"' and (not current_item or current_item[-1] != '\\'):
+        if char == '"' and (not current_item or current_item[-1] != "\\"):
             in_quotes = not in_quotes
             current_item += char
-        elif char == '(' and not in_quotes:
+        elif char == "(" and not in_quotes:
             # Stop collecting when we hit explanatory text
             if current_item:
                 items.append(current_item.strip())
             current_item = ""
-        elif char == ',' and not in_quotes:
+        elif char == "," and not in_quotes:
             if current_item:
                 items.append(current_item.strip())
             current_item = ""
@@ -269,13 +284,17 @@ def clean_json_array(array_content: str) -> str:
 
     return f'[{",".join(cleaned_items)}]'
 
+
 def clean_json_str(json_str: str) -> str:
     """Clean JSON string by handling arrays with explanatory text."""
     # Remove explanatory text in parentheses from arrays
-    json_str = re.sub(r'\[([^\]]*?)\]', lambda m: clean_json_array(m.group(1)), json_str)
+    json_str = re.sub(
+        r"\[([^\]]*?)\]", lambda m: clean_json_array(m.group(1)), json_str
+    )
     # Remove trailing commas
-    json_str = re.sub(r',(\s*[}\]])', r'\1', json_str)
+    json_str = re.sub(r",(\s*[}\]])", r"\1", json_str)
     return json_str
+
 
 def fix_vocabulary_json(content: str) -> str:
     """Fix common JSON issues in vocabulary responses."""
@@ -290,69 +309,101 @@ def fix_vocabulary_json(content: str) -> str:
     vocab_str = vocab_match.group(1)
 
     # Fix unterminated strings by adding missing quotes
-    vocab_str = re.sub(r'("[^"]*?)\n', r'\1"', vocab_str)  # Fix strings broken by newlines
-    vocab_str = re.sub(r'("[^"]*?)$', r'\1"', vocab_str)  # Fix strings at end of content
-    vocab_str = re.sub(r'([{,]\s*"[^"]*?)\s*([},])', r'\1"', vocab_str)  # Fix unterminated property values
-    vocab_str = re.sub(r'([{,]\s*[^"\s{},][^:}]*?):', r'"\1":', vocab_str)  # Fix unquoted property names
+    vocab_str = re.sub(
+        r'("[^"]*?)\n', r'\1"', vocab_str
+    )  # Fix strings broken by newlines
+    vocab_str = re.sub(
+        r'("[^"]*?)$', r'\1"', vocab_str
+    )  # Fix strings at end of content
+    vocab_str = re.sub(
+        r'([{,]\s*"[^"]*?)\s*([},])', r'\1"', vocab_str
+    )  # Fix unterminated property values
+    vocab_str = re.sub(
+        r'([{,]\s*[^"\s{},][^:}]*?):', r'"\1":', vocab_str
+    )  # Fix unquoted property names
 
     # Fix missing quotes around property values
     vocab_str = re.sub(r':\s*([^"\s{}\[\],][^,}]*?)([,}])', r': "\1"\2', vocab_str)
 
     # Fix missing commas between array elements
-    vocab_str = re.sub(r'}\s*{', '},{', vocab_str)
-    vocab_str = re.sub(r']\s*\[', '],[', vocab_str)
+    vocab_str = re.sub(r"}\s*{", "},{", vocab_str)
+    vocab_str = re.sub(r"]\s*\[", "],[", vocab_str)
 
     # Fix incomplete objects by adding missing closing braces
-    open_braces = vocab_str.count('{')
-    close_braces = vocab_str.count('}')
+    open_braces = vocab_str.count("{")
+    close_braces = vocab_str.count("}")
     if open_braces > close_braces:
-        vocab_str = vocab_str.rstrip() + ('}'* (open_braces - close_braces))
+        vocab_str = vocab_str.rstrip() + ("}" * (open_braces - close_braces))
 
     # Fix incomplete arrays by adding missing closing brackets
-    open_brackets = vocab_str.count('[')
-    close_brackets = vocab_str.count(']')
+    open_brackets = vocab_str.count("[")
+    close_brackets = vocab_str.count("]")
     if open_brackets > close_brackets:
-        vocab_str = vocab_str.rstrip() + (']' * (open_brackets - close_brackets))
+        vocab_str = vocab_str.rstrip() + ("]" * (open_brackets - close_brackets))
 
     # Fix common formatting issues
-    vocab_str = vocab_str.replace('\\n', ' ')  # Replace newlines in strings
-    vocab_str = re.sub(r'\s+', ' ', vocab_str)  # Normalize whitespace
-    vocab_str = re.sub(r',\s*([}\]])', r'\1', vocab_str)  # Remove trailing commas
-    vocab_str = re.sub(r'([{,])\s*([^"\s])', r'\1"\2', vocab_str)  # Add missing opening quotes
+    vocab_str = vocab_str.replace("\\n", " ")  # Replace newlines in strings
+    vocab_str = re.sub(r"\s+", " ", vocab_str)  # Normalize whitespace
+    vocab_str = re.sub(r",\s*([}\]])", r"\1", vocab_str)  # Remove trailing commas
+    vocab_str = re.sub(
+        r'([{,])\s*([^"\s])', r'\1"\2', vocab_str
+    )  # Add missing opening quotes
 
     # Fix truncated objects by ensuring required properties
-    required_props = ['term', 'vocabulary_type', 'definition', 'usage_notes', 'variants']
+    required_props = [
+        "term",
+        "vocabulary_type",
+        "definition",
+        "usage_notes",
+        "variants",
+    ]
     for prop in required_props:
         if f'"{prop}"' not in vocab_str.lower():
             # Add missing property before the closing brace
-            vocab_str = re.sub(r'}(?=[^}]*$)', f', "{prop}": ""}}', vocab_str)
+            vocab_str = re.sub(r"}(?=[^}]*$)", f', "{prop}": ""}}', vocab_str)
 
     # Validate the structure
     try:
-        fixed_content = content[:vocab_match.start(1)] + vocab_str + content[vocab_match.end(1):]
+        fixed_content = (
+            content[: vocab_match.start(1)] + vocab_str + content[vocab_match.end(1) :]
+        )
         json.loads(fixed_content)  # Test if valid JSON
         return fixed_content
     except json.JSONDecodeError as e:
         logger.warning(f"Failed to parse JSON structure: {str(e)}")
         try:
             # More aggressive cleaning
-            vocab_str = re.sub(r'([^"]),([^"\s])', r'\1, "\2', vocab_str)  # Fix unquoted values after commas
-            vocab_str = re.sub(r'([^"])}', r'\1"}', vocab_str)  # Fix missing quotes before closing braces
-            vocab_str = re.sub(r'([^"])]', r'\1"]', vocab_str)  # Fix missing quotes before closing brackets
-            fixed_content = content[:vocab_match.start(1)] + vocab_str + content[vocab_match.end(1):]
+            vocab_str = re.sub(
+                r'([^"]),([^"\s])', r'\1, "\2', vocab_str
+            )  # Fix unquoted values after commas
+            vocab_str = re.sub(
+                r'([^"])}', r'\1"}', vocab_str
+            )  # Fix missing quotes before closing braces
+            vocab_str = re.sub(
+                r'([^"])]', r'\1"]', vocab_str
+            )  # Fix missing quotes before closing brackets
+            fixed_content = (
+                content[: vocab_match.start(1)]
+                + vocab_str
+                + content[vocab_match.end(1) :]
+            )
             json.loads(fixed_content)  # Test if valid JSON
             return fixed_content
         except json.JSONDecodeError as e2:
-            logger.warning(f"Failed to parse JSON even after aggressive cleaning: {str(e2)}")
+            logger.warning(
+                f"Failed to parse JSON even after aggressive cleaning: {str(e2)}"
+            )
             return content
+
 
 def fix_missing_prop(obj_str: str, prop: str) -> str:
     """Add missing property to a JSON object string."""
     if not re.search(f'"{prop}":', obj_str):
-        if obj_str.rstrip().endswith('}'):
-            return obj_str[:-1] + f', "{prop}": ""' + '}'
-        return obj_str + f', "{prop}": ""' + '}'
-    return obj_str + '}'
+        if obj_str.rstrip().endswith("}"):
+            return obj_str[:-1] + f', "{prop}": ""' + "}"
+        return obj_str + f', "{prop}": ""' + "}"
+    return obj_str + "}"
+
 
 def extract_and_clean_json(content: str) -> Union[Dict[str, Any], str]:
     """Extract and clean JSON from text content."""
@@ -370,7 +421,7 @@ def extract_and_clean_json(content: str) -> Union[Dict[str, Any], str]:
         logger.debug("Initial JSON parse failed, trying to clean")
 
     # Try to extract JSON from markdown code blocks
-    json_block_match = re.search(r'```json\s*(.*?)\s*```', content, re.DOTALL)
+    json_block_match = re.search(r"```json\s*(.*?)\s*```", content, re.DOTALL)
     if json_block_match:
         try:
             json_str = json_block_match.group(1).strip()
@@ -380,7 +431,7 @@ def extract_and_clean_json(content: str) -> Union[Dict[str, Any], str]:
             logger.warning(f"Failed to parse JSON from code block: {str(e)}")
 
     # If no JSON block or parsing failed, try to find any JSON structure
-    json_match = re.search(r'(\{[\s\S]*?\})', content)
+    json_match = re.search(r"(\{[\s\S]*?\})", content)
     if json_match:
         try:
             json_str = json_match.group(1)
@@ -391,10 +442,12 @@ def extract_and_clean_json(content: str) -> Union[Dict[str, Any], str]:
             # Try one more time with more aggressive cleaning
             try:
                 # Remove any non-JSON characters
-                json_str = re.sub(r'[^\[\]{}",:\s\w\-\'.]', '', json_str)
+                json_str = re.sub(r'[^\[\]{}",:\s\w\-\'.]', "", json_str)
                 return json.loads(json_str)
             except json.JSONDecodeError as e:
-                logger.warning(f"Failed to parse JSON even after aggressive cleaning: {str(e)}")
+                logger.warning(
+                    f"Failed to parse JSON even after aggressive cleaning: {str(e)}"
+                )
 
     # If we couldn't parse as JSON, try to fix common issues in vocabulary responses
     try:

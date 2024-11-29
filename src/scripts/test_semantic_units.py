@@ -1,4 +1,5 @@
 """Script to test semantic units analysis with high concurrency."""
+
 import asyncio
 import logging
 
@@ -8,6 +9,7 @@ from src.tasks.lyrics_analysis.semantic_units import analyze_song_semantic_units
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
 
 @flow(name="test_semantic_units")
 async def test_semantic_units(song_id: str):
@@ -20,6 +22,7 @@ async def test_semantic_units(song_id: str):
         logger.info("✅ Analysis complete!")
         logger.info(f"📊 Processed {len(result['semantic_units_analysis'])} units")
     return result
+
 
 if __name__ == "__main__":
     # Use a song with lots of lines

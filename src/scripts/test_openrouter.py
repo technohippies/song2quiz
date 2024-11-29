@@ -1,4 +1,5 @@
 """Test script for OpenRouter API."""
+
 import asyncio
 import json
 import logging
@@ -8,6 +9,7 @@ from src.services.openrouter import OpenRouterClient
 # Set up logging
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
+
 
 async def test_api():
     """Test a simple API call."""
@@ -58,10 +60,7 @@ The response must be this exact JSON structure with no wrapping:
 
         logger.info("Making API call...")
         result = await client.complete(
-            prompt=prompt,
-            system_prompt=system_prompt,
-            temperature=0.3,
-            max_tokens=1024
+            prompt=prompt, system_prompt=system_prompt, temperature=0.3, max_tokens=1024
         )
 
         logger.info(f"Raw result: {json.dumps(result, indent=2)}")
@@ -70,6 +69,7 @@ The response must be this exact JSON structure with no wrapping:
     except Exception as e:
         logger.error(f"Error: {str(e)}")
         return None
+
 
 if __name__ == "__main__":
     result = asyncio.run(test_api())

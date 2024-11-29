@@ -1,4 +1,5 @@
 """System prompt for semantic units analysis."""
+
 from src.constants.lyrics_analysis.rhetorical import SemanticLayer, SemanticUnitType
 
 VALID_UNIT_TYPES = ", ".join([unit_type.value for unit_type in SemanticUnitType])

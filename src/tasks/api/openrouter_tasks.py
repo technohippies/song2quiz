@@ -10,6 +10,7 @@ from src.models.api.openrouter import OpenRouterAPI, OpenRouterAPIError
 
 logger = logging.getLogger(__name__)
 
+
 @task(name="complete_openrouter_prompt")
 @observe(as_type="generation")
 async def complete_openrouter_prompt(
@@ -17,7 +18,7 @@ async def complete_openrouter_prompt(
     system_prompt: str,
     task_type: str,
     temperature: float = 0.7,
-    max_tokens: int = 512
+    max_tokens: int = 512,
 ) -> Optional[Dict[str, Any]]:
     """Complete a prompt using OpenRouter API."""
     try:
@@ -28,7 +29,7 @@ async def complete_openrouter_prompt(
 
         messages = [
             {"role": "system", "content": system_prompt},
-            {"role": "user", "content": formatted_prompt}
+            {"role": "user", "content": formatted_prompt},
         ]
 
         async with client:
@@ -37,7 +38,7 @@ async def complete_openrouter_prompt(
                     messages=messages,
                     task_type=task_type,
                     temperature=temperature,
-                    max_tokens=max_tokens
+                    max_tokens=max_tokens,
                 )
             except httpx.HTTPError as e:
                 raise OpenRouterAPIError(f"HTTP error occurred: {str(e)}")  # noqa: B904 from e
@@ -52,7 +53,7 @@ async def complete_openrouter_prompt(
             "unit": "TOKENS",
             "input_cost": None,
             "output_cost": None,
-            "total_cost": None
+            "total_cost": None,
         }
 
         # Update observation with usage and model info
@@ -69,15 +70,14 @@ async def complete_openrouter_prompt(
                 "finish_reason": response.get("choices", [{}])[0].get("finish_reason"),
                 "prompt_version": "1",
                 "prompt_template": "semantic_analysis",
-                "response_format": "json"
-            }
+                "response_format": "json",
+            },
         )
 
         return response
 
     except Exception as e:
         langfuse_context.update_current_observation(
-            level="ERROR",
-            metadata={"error": str(e)}
+            level="ERROR", metadata={"error": str(e)}
         )
         raise OpenRouterAPIError(f"Error completing OpenRouter prompt: {str(e)}") from e

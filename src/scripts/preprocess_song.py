@@ -11,13 +11,18 @@ from src.utils.io.paths import get_songs_dir
 
 
 @click.command()
-@click.option('--song-id', '-i', type=int, help='ID of the song to preprocess')
-@click.option('--song', '-s', help='Name of the song (if ID not provided)')
-@click.option('--artist', '-a', help='Name of the artist (if ID not provided)')
-@click.option('--data-dir', '-d',
-              default=str(Path(__file__).parent.parent.parent / "data"),
-              help='Base directory for data storage')
-def main(song_id: Optional[int], song: Optional[str], artist: Optional[str], data_dir: str) -> int:
+@click.option("--song-id", "-i", type=int, help="ID of the song to preprocess")
+@click.option("--song", "-s", help="Name of the song (if ID not provided)")
+@click.option("--artist", "-a", help="Name of the artist (if ID not provided)")
+@click.option(
+    "--data-dir",
+    "-d",
+    default=str(Path(__file__).parent.parent.parent / "data"),
+    help="Base directory for data storage",
+)
+def main(
+    song_id: Optional[int], song: Optional[str], artist: Optional[str], data_dir: str
+) -> int:
     """Run preprocessing flow for a single song.
 
     Can be run either with a song ID directly, or with song name and artist
@@ -32,7 +37,9 @@ def main(song_id: Optional[int], song: Optional[str], artist: Optional[str], dat
 
         if not found_id:
             if not (song and artist):
-                raise click.UsageError("Must provide either --song-id or both --song and --artist")
+                raise click.UsageError(
+                    "Must provide either --song-id or both --song and --artist"
+                )
 
             # Look through all song directories for matching metadata
             songs_dir = get_songs_dir(data_dir)
@@ -46,8 +53,10 @@ def main(song_id: Optional[int], song: Optional[str], artist: Optional[str], dat
                     try:
                         with open(metadata_file) as f:
                             metadata = json.load(f)
-                        if metadata['title'].lower() == song.lower() and \
-                           metadata['artist'].lower() == artist.lower():
+                        if (
+                            metadata["title"].lower() == song.lower()
+                            and metadata["artist"].lower() == artist.lower()
+                        ):
                             found_id = int(song_dir.name)
                             break
                     except (json.JSONDecodeError, KeyError) as e:
@@ -58,7 +67,9 @@ def main(song_id: Optional[int], song: Optional[str], artist: Optional[str], dat
                 print(f"❌ Could not find song ID for {song} by {artist}")
                 return 1
 
-        success = src.flows.preprocessing.subflows.process_song_annotations_flow(song_id=found_id, base_path=data_dir)
+        success = src.flows.preprocessing.subflows.process_song_annotations_flow(
+            song_id=found_id, base_path=data_dir
+        )
 
         if success:
             print("\n✅ Preprocessing completed successfully")
@@ -70,6 +81,7 @@ def main(song_id: Optional[int], song: Optional[str], artist: Optional[str], dat
     except Exception as e:
         print(f"\n❌ Preprocessing failed with error: {e}")
         return 1
+
 
 if __name__ == "__main__":
     exit(main())
