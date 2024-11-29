@@ -1,6 +1,7 @@
-from dataclasses import dataclass, field
-from typing import List, Optional, Dict, Any
 import json
+from dataclasses import dataclass, field
+from typing import Any, Dict, List, Optional
+
 
 @dataclass
 class Artist:
@@ -64,33 +65,33 @@ class GeniusMetadata:
     annotation_count: int
     primary_artist_names: str
     language: str
-    
+
     # Media
     header_image_url: Optional[str] = None
     header_image_thumbnail_url: Optional[str] = None
     song_art_image_url: Optional[str] = None
     song_art_image_thumbnail_url: Optional[str] = None
-    
+
     # Colors
     song_art_primary_color: Optional[str] = None
     song_art_secondary_color: Optional[str] = None
     song_art_text_color: Optional[str] = None
-    
+
     # Release info
     release_date: Optional[str] = None
     release_date_for_display: Optional[str] = None
     recording_location: Optional[str] = None
-    
+
     # Related data
     album: Optional[Album] = None
     stats: Optional[Stats] = None
     description: Optional[Description] = None
     custom_performances: List[Performance] = field(default_factory=list)
-    
+
     # State
     lyrics_state: str = "complete"
     pyongs_count: int = 0
-    
+
     # External IDs
     apple_music_id: Optional[str] = None
     apple_music_player_url: Optional[str] = None
@@ -112,10 +113,10 @@ class GeniusMetadata:
             )
         else:
             album = None
-            
+
         stats = Stats(**data.get("stats", {})) if data.get("stats") else None
         description = Description(data["description"]) if data.get("description") else None
-        
+
         performances = []
         for perf in data.get("custom_performances", []):
             artists = [Artist(**artist) for artist in perf["artists"]]

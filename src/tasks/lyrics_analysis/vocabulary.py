@@ -46,11 +46,11 @@ async def analyze_fragment(
                 if not isinstance(vocabulary_data, dict) or "vocabulary" not in vocabulary_data:
                     logger.error(f"Invalid vocabulary data structure: {vocabulary_data}")
                     return None
-                
+
                 # Return None if there are no vocabulary terms
                 if not vocabulary_data["vocabulary"]:
                     return None
-                    
+
                 # Create the expected response structure
                 return {
                     "vocabulary": [

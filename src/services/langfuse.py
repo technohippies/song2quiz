@@ -1,9 +1,11 @@
 """Langfuse service for LLM observability."""
 import logging
+
 import httpx
 from langfuse import Langfuse
-from src.utils.settings import settings
+
 from src.constants.api import MODEL_COSTS
+from src.utils.settings import settings
 
 logger = logging.getLogger(__name__)
 

@@ -1,9 +1,10 @@
 """Run the complete pipeline for a song."""
+import asyncio
 import logging
 from pathlib import Path
 from typing import Optional
+
 import click
-import asyncio
 
 import src.flows.generation.main
 import src.flows.ingestion.subflows

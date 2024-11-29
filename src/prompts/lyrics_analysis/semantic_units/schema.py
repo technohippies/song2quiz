@@ -1,5 +1,5 @@
 """Schema for semantic units analysis."""
-from src.constants.lyrics_analysis.rhetorical import SemanticUnitType, SemanticLayer
+from src.constants.lyrics_analysis.rhetorical import SemanticLayer, SemanticUnitType
 
 SEMANTIC_UNITS_SCHEMA = {
     "type": "object",

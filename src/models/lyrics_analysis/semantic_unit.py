@@ -1,8 +1,10 @@
 """Models for semantic unit analysis."""
 from typing import List, Optional
+
 from pydantic import BaseModel
 
-from src.constants.lyrics_analysis.rhetorical import SemanticUnitType, SemanticLayer
+from src.constants.lyrics_analysis.rhetorical import SemanticLayer, SemanticUnitType
+
 
 class SemanticUnit(BaseModel):
     """A semantic unit with its analysis."""

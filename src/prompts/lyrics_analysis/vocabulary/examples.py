@@ -42,7 +42,7 @@ EXAMPLES = [
                 },
                 {
                     "term": "cop",
-                    "vocabulary_type": "slang", 
+                    "vocabulary_type": "slang",
                     "definition": "To acquire or purchase something",
                     "usage_notes": "Informal term for buying",
                     "variants": ["copped", "copping"],

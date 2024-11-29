@@ -1,9 +1,10 @@
 """Models for LRCLib lyrics data."""
 
-from dataclasses import dataclass
-from typing import Optional, Dict, Any
 import re
+from dataclasses import dataclass
 from datetime import timedelta
+from typing import Any, Dict, Optional
+
 
 @dataclass
 class TimestampedLine:
@@ -17,16 +18,16 @@ class TimestampedLine:
         match = re.match(r'\[(\d{2}):(\d{2})\.(\d{2})\](.*)', line)
         if not match:
             return None
-            
+
         minutes, seconds, centiseconds = map(int, match.groups()[:3])
         text = match.group(4).strip()
-        
+
         timestamp = timedelta(
             minutes=minutes,
             seconds=seconds,
             milliseconds=centiseconds*10
         )
-        
+
         return cls(timestamp=timestamp, text=text)
 
     def to_dict(self) -> Dict[str, Any]:
@@ -35,7 +36,7 @@ class TimestampedLine:
         minutes = int(total_seconds // 60)
         seconds = int(total_seconds % 60)
         centiseconds = int((total_seconds * 100) % 100)
-        
+
         return {
             "timestamp": f"{minutes:02d}:{seconds:02d}.{centiseconds:02d}",
             "text": self.text
@@ -55,12 +56,12 @@ class LRCLibLyrics:
         """Parse lyrics into timestamped lines if has_timestamps is True."""
         if not self.has_timestamps:
             return []
-            
+
         lines = []
         for line in self.lyrics.split('\n'):
             if parsed := TimestampedLine.from_lrc_line(line):
                 lines.append(parsed)
-                
+
         return sorted(lines, key=lambda x: x.timestamp)
 
     @property
@@ -72,7 +73,7 @@ class LRCLibLyrics:
         """Get the lyrics line that should be displayed at a given time."""
         if not self.has_timestamps:
             return None
-            
+
         lines = self.timestamped_lines
         for i, line in enumerate(lines):
             # If this is the last line or we're before the next timestamp

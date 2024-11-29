@@ -1,6 +1,6 @@
 """Task for analyzing parenthetical content in lyrics."""
 import logging
-from typing import Dict, Any
+from typing import Any, Dict
 
 from src.utils.cleaning.text import extract_parentheticals
 
@@ -8,10 +8,10 @@ logger = logging.getLogger(__name__)
 
 def analyze_parentheticals(lyrics: str) -> Dict[str, Any]:
     """Extract parenthetical content from lyrics.
-    
+
     Args:
         lyrics: The lyrics line to analyze
-        
+
     Returns:
         Dictionary containing:
         {
@@ -22,12 +22,12 @@ def analyze_parentheticals(lyrics: str) -> Dict[str, Any]:
     try:
         # Extract parentheticals
         line_without_parens, parens = extract_parentheticals(lyrics)
-        
+
         return {
             "line_without_parentheses": line_without_parens,
             "parentheticals": [p["content"] for p in parens]
         }
-        
+
     except Exception as e:
         logger.error(f"❌ Failed to extract parentheticals: {str(e)}")
         return {

@@ -1,14 +1,15 @@
+import re
 from pathlib import Path
 from typing import Union
-import re
+
 
 def sanitize_filename(filename: str) -> str:
     """
     Convert a string into a safe filename by removing or replacing invalid characters.
-    
+
     Args:
         filename: The string to convert into a safe filename
-        
+
     Returns:
         A sanitized version of the filename that is safe to use in the filesystem
     """
@@ -43,11 +44,11 @@ def get_songs_catalog_path(base_path: Union[str, Path]) -> Path:
 def get_song_dir(base_path: Union[str, Path], song_id: int) -> Path:
     """
     Get the absolute path to a song's directory.
-    
+
     Args:
         base_path: Base project directory
         song_id: Genius song ID
-        
+
     Returns:
         Path to the song directory
     """
@@ -56,11 +57,11 @@ def get_song_dir(base_path: Union[str, Path], song_id: int) -> Path:
 def ensure_song_dir(base_path: Union[str, Path], song_id: int) -> Path:
     """
     Ensure a song's directory exists and return its path.
-    
+
     Args:
         base_path: Base project directory
         song_id: Genius song ID
-        
+
     Returns:
         Path to the created/existing song directory
     """
@@ -71,11 +72,11 @@ def ensure_song_dir(base_path: Union[str, Path], song_id: int) -> Path:
 def get_relative_path(path: Union[str, Path], base_path: Union[str, Path]) -> str:
     """
     Get a path relative to the base project directory.
-    
+
     Args:
         path: Path to convert to relative
         base_path: Base project directory
-        
+
     Returns:
         Relative path as string
     """
@@ -84,11 +85,11 @@ def get_relative_path(path: Union[str, Path], base_path: Union[str, Path]) -> st
 def get_absolute_path(relative_path: str, base_path: Union[str, Path]) -> Path:
     """
     Convert a relative path to absolute using the base project directory.
-    
+
     Args:
         relative_path: Relative path to convert
         base_path: Base project directory
-        
+
     Returns:
         Absolute path
     """
@@ -97,21 +98,21 @@ def get_absolute_path(relative_path: str, base_path: Union[str, Path]) -> Path:
 def update_song_paths(song_data: dict, base_path: Union[str, Path]) -> dict:
     """
     Update song data to use relative paths.
-    
+
     Args:
         song_data: Dictionary containing song metadata
         base_path: Base project directory
-        
+
     Returns:
         Updated song data with relative paths
     """
     base = Path(base_path)
     updated = song_data.copy()
-    
+
     # Convert absolute paths to relative
     path_fields = ['song_path', 'annotations_path', 'lyrics_path']
     for field in path_fields:
         if field in updated and updated[field]:
             updated[field] = get_relative_path(updated[field], base)
-            
+
     return updated
