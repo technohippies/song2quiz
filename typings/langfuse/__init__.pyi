@@ -8,7 +8,6 @@ class Langfuse:
         public_key: str,
         secret_key: str,
         host: Optional[str] = None,
-        debug: bool = False
+        debug: bool = False,
     ) -> None: ...
-
     def trace(self, name: str, **kwargs: Any) -> Any: ...

@@ -13,7 +13,8 @@ from src.tasks.api.openrouter_tasks import complete_openrouter_prompt
 
 BATCH_SIZE = 5
 
-T = TypeVar('T')
+T = TypeVar("T")
+
 
 def format_prompt(examples: List[Dict[str, Any]], line: str) -> str:
     """Format prompt with examples."""
@@ -32,12 +33,14 @@ async def analyze_fragment(
 
     try:
         prompt = format_prompt(EXAMPLES, fragment["text"])
-        log.info(f"[{index}/{total}] Formatted prompt for text: {fragment['text'][:50]}...")
+        log.info(
+            f"[{index}/{total}] Formatted prompt for text: {fragment['text'][:50]}..."
+        )
 
         async def _try_analyze() -> Optional[Dict[str, Any]]:
             openrouter_fn = cast(
                 Callable[..., Awaitable[Optional[Dict[str, Any]]]],
-                complete_openrouter_prompt
+                complete_openrouter_prompt,
             )
             try:
                 response = await openrouter_fn(
@@ -46,7 +49,7 @@ async def analyze_fragment(
                     task_type="analysis",
                     temperature=0.1,
                 )
-                if not response or 'choices' not in response:
+                if not response or "choices" not in response:
                     log.error(f"[{index}/{total}] Invalid API response: {response}")
                     return None
                 return response
@@ -62,8 +65,10 @@ async def analyze_fragment(
             except Exception as e:
                 log.error(f"[{index}/{total}] Error analyzing fragment: {str(e)}")
                 if "rate limit exceeded" in str(e).lower() and attempt < 2:
-                    delay = 2 ** attempt
-                    log.warning(f"Rate limit hit, retrying in {delay}s (attempt {attempt + 1}/3)")
+                    delay = 2**attempt
+                    log.warning(
+                        f"Rate limit hit, retrying in {delay}s (attempt {attempt + 1}/3)"
+                    )
                     await asyncio.sleep(delay)
                     continue
                 elif attempt < 2:  # For other errors, retry if not last attempt
@@ -107,7 +112,9 @@ async def analyze_song_semantic_units(song_path: str) -> Optional[Dict[str, Any]
             batch_tasks = [
                 analyze_fragment(f, idx, total) for idx, f in enumerate(batch, i + 1)
             ]
-            batch_results = await asyncio.gather(*[t for t in batch_tasks if t is not None])
+            batch_results = await asyncio.gather(
+                *[t for t in batch_tasks if t is not None]
+            )
             results.extend([r for r in batch_results if r])
             log.info(
                 f"✓ Processed batch {i//BATCH_SIZE + 1} ({i+1}-{min(i+BATCH_SIZE, total)})"
