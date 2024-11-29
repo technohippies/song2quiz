@@ -20,8 +20,10 @@ jobs:
     - name: Set up uv
       uses: astral-sh/setup-uv@v4
         
-    - name: Install dependencies
+    - name: Create venv and install dependencies
       run: |
+        uv venv
+        . .venv/bin/activate
         uv pip install -r requirements.txt
         
     - name: Lint with Ruff
@@ -56,15 +58,19 @@ jobs:
     - name: Set up uv
       uses: astral-sh/setup-uv@v4
         
-    - name: Install dependencies
+    - name: Create venv and install dependencies
       run: |
+        uv venv
+        . .venv/bin/activate
         uv pip install -r requirements.txt
+        uv pip install pytest pytest-asyncio pytest-cov
         
-    - name: Test with pytest
+    - name: Run tests
       env:
         OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
         LANGFUSE_PUBLIC_KEY: ${{ secrets.LANGFUSE_PUBLIC_KEY }}
         LANGFUSE_SECRET_KEY: ${{ secrets.LANGFUSE_SECRET_KEY }}
         LANGFUSE_HOST: ${{ secrets.LANGFUSE_HOST }}
       run: |
+        . .venv/bin/activate
         pytest -v
