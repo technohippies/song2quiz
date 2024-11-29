@@ -91,3 +91,27 @@ ruff format .
 ruff check --fix .
 mypy .
 git push origin feature/setup-ci
+
+# Testing Guide
+
+## Local CI Testing
+
+Before pushing changes to GitHub, you can simulate the CI environment locally to catch issues early.
+
+### Quick Test
+
+Run all checks in a fresh environment:
+
+```bash
+# Run all tests
+pytest
+
+# Run specific test file
+pytest tests/scripts/test_ingest_song.py
+
+# Run with coverage
+pytest --cov=src
+
+# Run tests matching a pattern
+pytest -k "test_ingest"
+```

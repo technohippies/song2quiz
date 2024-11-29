@@ -1,0 +1,31 @@
+repos:
+- repo: https://github.com/astral-sh/uv-pre-commit
+  rev: 0.5.5
+  hooks:
+    # Update the uv lockfile
+    - id: uv-lock
+
+    # Export to requirements.txt
+    - id: uv-export
+      args: ["--frozen"]
+
+- repo: local
+  hooks:
+    - id: ruff-format
+      name: Format Python code
+      entry: ruff format
+      language: python
+      types: [python]
+
+    - id: ruff-check
+      name: Lint Python code
+      entry: ruff check --fix
+      language: python
+      types: [python]
+
+    - id: mypy
+      name: Type check Python code
+      entry: mypy
+      language: python
+      types: [python]
+      additional_dependencies: ["mypy"]

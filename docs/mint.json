@@ -15,12 +15,17 @@
       "to": "#07C983"
     }
   },
-  "versions": ["en", "cn"],
+  "versions": [
+    "en",
+    "cn"
+  ],
   "navigation": [
     {
       "group": "Getting Started",
       "version": "en",
-      "pages": ["en/installation"]
+      "pages": [
+        "en/installation"
+      ]
     },
     {
       "group": "Architecture",
@@ -43,12 +48,17 @@
     {
       "group": "Development",
       "version": "en",
-      "pages": ["en/development/testing"]
+      "pages": [
+        "en/development/testing",
+        "en/development/contributing"
+      ]
     },
     {
       "group": "入门指南",
       "version": "cn",
-      "pages": ["cn/installation"]
+      "pages": [
+        "cn/installation"
+      ]
     },
     {
       "group": "架构",
@@ -71,7 +81,10 @@
     {
       "group": "开发",
       "version": "cn",
-      "pages": ["cn/development/testing"]
+      "pages": [
+        "cn/development/testing",
+        "cn/development/contributing"
+      ]
     }
   ],
   "topbarLinks": [
