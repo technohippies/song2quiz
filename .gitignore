@@ -40,3 +40,4 @@ Thumbs.db
 python
 source
 uv.lock
+.env
