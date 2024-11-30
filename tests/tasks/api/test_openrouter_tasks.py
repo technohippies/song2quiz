@@ -1,153 +1,186 @@
-"""Test OpenRouter tasks."""
+"""Tests for OpenRouter API tasks and Langfuse integration."""
 
-import os
-from typing import Any, Dict, Generator
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from src.models.api.openrouter import OpenRouterAPIError
-from src.tasks.api.openrouter_tasks import complete_openrouter_prompt
+from src.tasks.api.openrouter_tasks import TokenUsage, complete_openrouter_prompt
 
 
-@pytest.fixture()
-def mock_openrouter_response() -> Dict[str, Any]:
-    """Mock successful OpenRouter API response"""
-    return {
+@pytest.mark.asyncio
+async def test_openrouter_token_tracking_mock() -> None:
+    """Test that token counts are correctly sent to Langfuse using mocks."""
+    # Mock response from OpenRouter
+    mock_response = {
         "id": "test-id",
         "model": "test-model",
-        "created": 1234567890,
-        "choices": [
-            {
-                "index": 0,
-                "message": {
-                    "role": "assistant",
-                    "content": '{"test_prompt": "This is a test prompt."}',
-                },
-                "finish_reason": "stop",
-            },
-        ],
+        "choices": [{"message": {"content": "test response", "role": "assistant"}}],
+        "usage": {"prompt_tokens": 100, "completion_tokens": 50, "total_tokens": 150},
+    }
+
+    # Mock the OpenRouter API call and Langfuse context
+    with (
+        patch(
+            "src.models.api.openrouter.OpenRouterAPI.complete", new_callable=AsyncMock
+        ) as mock_complete,
+        patch(
+            "langfuse.decorators.langfuse_context.update_current_observation"
+        ) as mock_langfuse,
+    ):
+        mock_complete.return_value = mock_response
+
+        # Make the API call using the underlying function
+        result = await complete_openrouter_prompt.fn(
+            formatted_prompt="test prompt",
+            system_prompt="test system prompt",
+            task_type="default",
+        )
+
+        # Verify the response
+        assert result is not None
+        assert isinstance(result, dict)
+        assert result["usage"]["prompt_tokens"] == 100
+        assert result["usage"]["completion_tokens"] == 50
+
+        # Verify the mock was called correctly
+        mock_complete.assert_called_once()
+
+        # Verify Langfuse was called with correct token usage
+        mock_langfuse.assert_called()
+        usage_arg = mock_langfuse.call_args.kwargs["usage"]
+        assert isinstance(usage_arg, TokenUsage)
+        assert usage_arg.unit == "TOKENS"
+        assert usage_arg.input == 100
+        assert usage_arg.output == 50
+        assert usage_arg.total == 150
+
+
+@pytest.mark.asyncio
+async def test_openrouter_token_tracking_missing_usage() -> None:
+    """Test handling of missing token usage data."""
+    # Mock response without usage data
+    mock_response = {
+        "id": "test-id",
+        "model": "test-model",
+        "choices": [{"message": {"content": "test response", "role": "assistant"}}],
+    }
+
+    # Mock the OpenRouter API call and Langfuse context
+    with (
+        patch(
+            "src.models.api.openrouter.OpenRouterAPI.complete", new_callable=AsyncMock
+        ) as mock_complete,
+        patch(
+            "langfuse.decorators.langfuse_context.update_current_observation"
+        ) as mock_langfuse,
+    ):
+        mock_complete.return_value = mock_response
+
+        # Make the API call using the underlying function
+        result = await complete_openrouter_prompt.fn(
+            formatted_prompt="test prompt",
+            system_prompt="test system prompt",
+            task_type="default",
+        )
+
+        # Verify the response
+        assert result is not None
+        assert isinstance(result, dict)
+        assert "usage" not in result
+
+        # Verify Langfuse was called with warning metadata
+        mock_langfuse.assert_called()
+        metadata_arg = mock_langfuse.call_args.kwargs["metadata"]
+        assert "warning" in metadata_arg
+        assert "No token usage information available" in metadata_arg["warning"]
+
+
+@pytest.mark.asyncio
+async def test_openrouter_token_tracking_malformed_usage() -> None:
+    """Test handling of malformed token usage data."""
+    # Create a mock response with malformed token usage data that will trigger Pydantic validation error
+    mock_response = {
+        "choices": [{"message": {"content": "test response"}}],
         "usage": {
-            "prompt_tokens": 10,
-            "completion_tokens": 20,
-            "total_tokens": 30,
+            "prompt_tokens": "invalid",  # String instead of int
+            "completion_tokens": None,  # None instead of int
+            "total_tokens": "bad",  # String instead of int
         },
     }
 
+    # Mock the OpenRouter API call and Langfuse context
+    with (
+        patch(
+            "src.models.api.openrouter.OpenRouterAPI.complete", new_callable=AsyncMock
+        ) as mock_complete,
+        patch(
+            "langfuse.decorators.langfuse_context.update_current_observation"
+        ) as mock_langfuse,
+    ):
+        mock_complete.return_value = mock_response
 
-@pytest.fixture(autouse=True)
-def mock_settings() -> Generator[MagicMock, None, None]:
-    """Mock settings to provide API key"""
-    with patch("src.utils.settings") as mock_settings:
-        api_key = os.getenv("OPENROUTER_API_KEY")
-        if not api_key:
-            print("WARNING: No OPENROUTER_API_KEY found in environment")
-        else:
-            print(f"Found API key starting with: {api_key[:8]}...")
-        mock_settings.OPENROUTER_API_KEY = api_key
-        yield mock_settings
-
-
-@pytest.fixture
-def mock_openrouter() -> Generator[AsyncMock, None, None]:
-    """Mock OpenRouter API responses"""
-    with patch("src.tasks.api.openrouter_tasks.complete_openrouter_prompt") as mock:
-        yield mock
-
-
-@pytest.mark.asyncio()
-async def test_complete_prompt_success(mock_openrouter: AsyncMock) -> None:
-    """Test successful prompt completion"""
-    mock_openrouter.return_value = AsyncMock(
-        return_value={"vocabulary": [{"term": "test"}]}
-    )
-    # ... rest of test
-
-
-@pytest.mark.asyncio()
-async def test_complete_prompt_invalid_json() -> None:
-    """Test that complete_prompt handles invalid JSON responses correctly."""
-    with patch("src.models.api.openrouter.OpenRouterAPI.complete") as mock_complete:
-        # Mock the complete method to return a response
-        async def mock_complete_response(*args: Any, **kwargs: Any) -> Dict[str, Any]:
-            return {
-                "choices": [
-                    {
-                        "message": {
-                            "content": '{\n  "prompt_test": "This is a test prompt."\n}',
-                            "role": "assistant",
-                        }
-                    }
-                ],
-                "usage": {
-                    "prompt_tokens": 10,
-                    "completion_tokens": 20,
-                    "total_tokens": 30,
-                },
-            }
-
-        mock_complete.side_effect = mock_complete_response
-
+        # Make the API call
         result = await complete_openrouter_prompt.fn(
             formatted_prompt="test prompt",
-            system_prompt="You are a test assistant",
+            system_prompt="test system prompt",
             task_type="default",
         )
+
+        # Verify we got a response despite malformed usage data
         assert result is not None
-        assert "choices" in result
-        assert len(result["choices"]) > 0
-        assert "message" in result["choices"][0]
-        assert "content" in result["choices"][0]["message"]
-        expected_content = '{\n  "prompt_test": "This is a test prompt."\n}'
-        assert result["choices"][0]["message"]["content"] == expected_content
+        assert isinstance(result, dict)
 
+        # Get all calls to Langfuse for debugging
+        all_calls = mock_langfuse.call_args_list
+        print("\nAll Langfuse calls:")
+        for i, call in enumerate(all_calls):
+            print(f"\nCall {i}:")
+            print(f"Kwargs metadata: {call.kwargs.get('metadata', {})}")
 
-@pytest.mark.asyncio()
-async def test_complete_prompt_error() -> None:
-    """Test that complete_prompt handles API errors correctly."""
-    with patch("src.models.api.openrouter.OpenRouterAPI.complete") as mock_complete:
-        # Mock an error response
-        async def mock_error_response(*args: Any, **kwargs: Any) -> None:
-            raise OpenRouterAPIError("Error during API request: Internal Server Error")
+        # Find calls with our error message
+        error_calls = [
+            call
+            for call in all_calls
+            if call.kwargs.get("metadata", {}).get("warning")
+            == "Error processing token usage data"
+        ]
 
-        mock_complete.side_effect = mock_error_response
+        # Verify we found the error call
+        assert len(error_calls) > 0, "No Langfuse calls found with token usage error"
 
-        with pytest.raises(OpenRouterAPIError) as exc_info:
-            await complete_openrouter_prompt.fn(
-                formatted_prompt="test prompt",
-                system_prompt="You are a test assistant",
-                task_type="default",
-            )
-        assert "Error during API request" in str(exc_info.value)
-        assert "Internal Server Error" in str(exc_info.value)
-
-
-@pytest.mark.asyncio()
-async def test_complete_prompt_integration() -> None:
-    """Test complete_prompt with actual API call."""
-    api_key = os.getenv("OPENROUTER_API_KEY")
-    print(f"API Key available: {'yes' if api_key else 'no'}")  # Debug print
-    if not api_key:
-        pytest.skip("Skipping integration test - no OPENROUTER_API_KEY available")
-
-    # Use a prompt that should return vocabulary analysis
-    prompt = "Analyze the vocabulary in: 'I got 99 problems'"
-
-    try:
-        result = await complete_openrouter_prompt.fn(
-            formatted_prompt=prompt,
-            system_prompt="You are a vocabulary analyzer",
-            task_type="analysis",
-            temperature=0.1,
+        # Check the error metadata
+        error_call = error_calls[0]
+        metadata = error_call.kwargs["metadata"]
+        assert metadata["warning"] == "Error processing token usage data"
+        assert "error" in metadata
+        assert (
+            "validation error" in metadata["error"].lower()
+            or "type error" in metadata["error"].lower()
         )
-        print("API call successful")  # Debug print
-    except Exception as e:
-        print(f"API call failed with error: {str(e)}")  # Debug print
-        raise
 
-    # Check that we got a valid response
+
+@pytest.mark.asyncio
+@pytest.mark.integration  # Mark as integration test so it can be skipped
+async def test_openrouter_token_tracking_real() -> None:
+    """Test token tracking with real API calls (requires API keys)."""
+    # This will make a real API call using the underlying function
+    result = await complete_openrouter_prompt.fn(
+        formatted_prompt="What is 2+2?",  # Simple prompt to minimize tokens
+        system_prompt="You are a helpful assistant.",
+        task_type="default",
+    )
+
+    # Verify we got a response
     assert result is not None
-    assert "choices" in result
-    assert len(result["choices"]) > 0
-    assert "message" in result["choices"][0]
-    assert "content" in result["choices"][0]["message"]
+    assert isinstance(result, dict)
+    assert "usage" in result
+    assert "prompt_tokens" in result["usage"]
+    assert "completion_tokens" in result["usage"]
+    assert "total_tokens" in result["usage"]
+
+    # Verify token counts are reasonable
+    assert result["usage"]["prompt_tokens"] > 0
+    assert result["usage"]["completion_tokens"] > 0
+    assert result["usage"]["total_tokens"] == (
+        result["usage"]["prompt_tokens"] + result["usage"]["completion_tokens"]
+    )

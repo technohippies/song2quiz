@@ -123,7 +123,7 @@ def song_ingestion_flow(
         results["annotations_path"] = str(annotations_path)
 
     # Get lyrics
-    lyrics = lrclib.search_lyrics(song_name, artist_name)
+    lyrics = lrclib.search_lyrics(artist_name, song_name)
     if lyrics:
         lyrics_path = song_path / "lyrics.json"
         with open(lyrics_path, "w", encoding="utf-8") as f:

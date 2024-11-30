@@ -61,14 +61,24 @@ class LRCLibLyrics:
         lines = []
         for line in self.lyrics.split("\n"):
             if parsed := TimestampedLine.from_lrc_line(line):
-                lines.append(parsed)
+                # Skip empty lines or lines with just dots
+                text = parsed.text.strip()
+                if text and text.replace(
+                    ".", ""
+                ):  # Keep if line has non-dot characters
+                    lines.append(parsed)
 
         return sorted(lines, key=lambda x: x.timestamp)
 
     @property
     def lines(self) -> list[str]:
         """Get just the text lines without timestamps."""
-        return [line.strip() for line in self.plain_lyrics.split("\n") if line.strip()]
+        return [
+            line.strip()
+            for line in self.plain_lyrics.split("\n")
+            if line.strip()
+            and line.strip().replace(".", "")  # Keep if line has non-dot characters
+        ]
 
     def get_line_at_time(self, time: timedelta) -> Optional[str]:
         """Get the lyrics line that should be displayed at a given time."""
@@ -95,3 +105,40 @@ class LRCLibLyrics:
             if self.has_timestamps
             else [],
         }
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> "LRCLibLyrics":
+        """Create LRCLibLyrics from a dictionary."""
+        lyrics = cls(
+            source=data.get("source", "lrclib"),
+            match_score=data.get("match_score", 1.0),
+            lyrics=data.get("lyrics", ""),
+            has_timestamps=data.get("has_timestamps", False),
+            plain_lyrics=data.get("plain_lyrics", ""),
+        )
+        return lyrics
+
+    @classmethod
+    def from_synced_lyrics(
+        cls, synced_lyrics: str, plain_lyrics: str = ""
+    ) -> "LRCLibLyrics":
+        """Create LRCLibLyrics from synced lyrics string."""
+        # Parse each line of the synced lyrics to get timestamped lines
+        timestamped_lines = []
+        for line in synced_lyrics.split("\n"):
+            if parsed := TimestampedLine.from_lrc_line(line):
+                timestamped_lines.append(parsed)
+
+        # If plain_lyrics not provided, generate from timestamped lines
+        if not plain_lyrics:
+            plain_lyrics = "\n".join(
+                line.text for line in timestamped_lines if line.text.strip()
+            )
+
+        return cls(
+            source="lrclib",
+            match_score=1.0,
+            lyrics=synced_lyrics,
+            has_timestamps=bool(synced_lyrics),
+            plain_lyrics=plain_lyrics,
+        )

@@ -9,11 +9,11 @@ The Song2Quiz pipeline processes songs through three main stages to generate edu
 Process a song through the entire pipeline:
 ```bash
 # Run the full pipeline
-python -m src.scripts.run_pipeline --song "Jesus Is King" --artist "Kanye West"
+python -m src.scripts.run_pipeline --song "Follow God" --artist "Kanye West"
 
 # Run specific stages only
-python -m src.scripts.run_pipeline --song "Jesus Is King" --artist "Kanye West" --steps ingest
-python -m src.scripts.run_pipeline --song "Jesus Is King" --artist "Kanye West" --steps preprocess
+python -m src.scripts.run_pipeline --song "Follow God" --artist "Kanye West" --steps ingest
+python -m src.scripts.run_pipeline --song "Follow God" --artist "Kanye West" --steps preprocess
 ```
 
 ## Pipeline Options
@@ -83,6 +83,6 @@ The pipeline is designed for resilience:
 To retry failed stages:
 ```bash
 # Retry specific stages
-python -m src.scripts.run_pipeline --song "Jesus Is King" --artist "Kanye West" --steps ingest
-python -m src.scripts.run_pipeline --song "Jesus Is King" --artist "Kanye West" --steps preprocess
+python -m src.scripts.run_pipeline --song "Follow God" --artist "Kanye West" --steps ingest
+python -m src.scripts.run_pipeline --song "Follow God" --artist "Kanye West" --steps preprocess
 ```

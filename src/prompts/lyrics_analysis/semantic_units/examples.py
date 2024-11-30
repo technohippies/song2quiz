@@ -6,7 +6,6 @@ EXAMPLES = [
         "analysis": {
             "semantic_units": [
                 {
-                    "id": "1",
                     "text": "living life in the fast lane",
                     "type": "IDIOM",
                     "meaning": "Living a risky or hectic lifestyle",
@@ -21,20 +20,18 @@ EXAMPLES = [
         "analysis": {
             "semantic_units": [
                 {
-                    "id": "1",
                     "text": "Started from the bottom",
                     "type": "METAPHOR",
-                    "meaning": "Beginning from a difficult or disadvantaged position",
-                    "layers": ["METAPHORICAL", "NARRATIVE"],
-                    "annotation": "Describes a journey from hardship to success",
+                    "meaning": "Began from a humble or difficult position",
+                    "layers": ["LITERAL", "METAPHORICAL", "CULTURAL"],
+                    "annotation": "References the journey from poverty or obscurity to success",
                 },
                 {
-                    "id": "2",
                     "text": "now we here",
-                    "type": "VERNACULAR",
-                    "meaning": "Now we have achieved success",
-                    "layers": ["LITERAL"],
-                    "annotation": "AAVE construction emphasizing current success",
+                    "type": "PHRASE",
+                    "meaning": "We have achieved success or reached a better position",
+                    "layers": ["LITERAL", "CULTURAL"],
+                    "annotation": "Contrasts current success with past struggles",
                 },
             ]
         },

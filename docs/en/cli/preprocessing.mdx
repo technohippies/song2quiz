@@ -1,10 +1,12 @@
 Matches song lyrics with their corresponding Genius annotations.
 
 ```bash
-python -m src.scripts.preprocess_song --song "Jesus Is King" --artist "Kanye West"
+python -m src.scripts.preprocess_song --song "Follow God" --artist "Kanye West"
 # OR
 python -m src.scripts.preprocess_song --song-id 123
 ```
+To run just vocab step:
+python -m src.scripts.run_pipeline run-pipeline --artist 'kanye west' --song 'otis' --steps analyze
 
 ## Process
 

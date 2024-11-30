@@ -3,15 +3,40 @@
 import asyncio
 import logging
 from pathlib import Path
-from typing import Optional
+from typing import Any, Callable, Optional, TypeVar
 
 import click
+from langfuse.decorators import langfuse_context, observe
 
 import src.flows.generation.main
 import src.flows.ingestion.subflows
 import src.flows.preprocessing.subflows
+from src.services.langfuse import create_song_session_id
 
 logger = logging.getLogger(__name__)
+
+T = TypeVar("T")
+
+
+def ensure_type(value: Any, expected_type: type[T]) -> T:
+    """Ensure a value is of the expected type."""
+    if not isinstance(value, expected_type):
+        raise TypeError(
+            f"Expected {expected_type.__name__}, got {type(value).__name__}"
+        )
+    return value
+
+
+# Configure logging
+logging.basicConfig(
+    level=logging.DEBUG,  # Change to DEBUG level
+    format="%(asctime)s.%(msecs)03d | %(levelname)-8s | %(name)s - %(message)s",
+    datefmt="%H:%M:%S",
+)
+# Set specific loggers to DEBUG level
+logging.getLogger("src").setLevel(logging.DEBUG)
+logging.getLogger("src.tasks").setLevel(logging.DEBUG)
+logging.getLogger("src.services").setLevel(logging.DEBUG)
 
 
 def find_song_id(artist: str, song: str) -> Optional[str]:
@@ -43,6 +68,12 @@ def find_song_id(artist: str, song: str) -> Optional[str]:
     return None
 
 
+def typed_observe() -> Callable[[Callable[..., T]], Callable[..., T]]:
+    """Type-safe wrapper for observe decorator."""
+    return observe()
+
+
+@typed_observe()
 def run_pipeline(
     artist: Optional[str] = None,
     song: Optional[str] = None,
@@ -52,18 +83,23 @@ def run_pipeline(
     max_retries: int = 3,
     data_dir: str = "data",
 ) -> None:
-    """Run the complete pipeline for a song.
-
-    Args:
-        artist: Artist name (required for ingestion)
-        song: Song title (required for ingestion)
-        song_id: Genius song ID (can be provided instead of artist/song)
-        steps: Pipeline steps to run ("all", "ingest", "preprocess", "analyze", "generate")
-        batch_size: Batch size for analysis tasks
-        max_retries: Maximum number of retries for failed tasks
-        data_dir: Directory containing song data
-    """
+    """Run the complete pipeline for a song."""
     try:
+        # Create a session ID for this pipeline run
+        session_id = create_song_session_id(song_id, artist, song)
+
+        # Update the trace with session ID
+        langfuse_context.update_current_trace(
+            name="song_pipeline",
+            session_id=session_id,
+            metadata={
+                "artist": artist,
+                "song": song,
+                "song_id": song_id,
+                "steps": steps,
+            },
+        )
+
         # Validate parameters
         if steps not in ["all", "ingest", "preprocess", "analyze", "generate"]:
             print(f"Invalid steps parameter: {steps}")
@@ -95,9 +131,18 @@ def run_pipeline(
                     "\n❌ Ingestion failed: song and artist names are required for ingestion"
                 )
                 return
-            result = src.flows.ingestion.subflows.song_ingestion_flow(
-                song_name=song, artist_name=artist, base_path=str(Path(data_dir))
-            )
+
+            # Decorate the ingestion flow to capture it in the session
+            @typed_observe()
+            def run_ingestion() -> dict:
+                langfuse_context.update_current_trace(
+                    name="song_ingestion", session_id=session_id
+                )
+                return src.flows.ingestion.subflows.song_ingestion_flow(
+                    song_name=song, artist_name=artist, base_path=str(Path(data_dir))
+                )
+
+            result = run_ingestion()
             if not result or not result.get("song_path"):
                 print("\n❌ Ingestion failed")
                 return
@@ -122,9 +167,16 @@ def run_pipeline(
                 print(f"\n❌ Preprocessing failed: invalid song_id '{song_id}'")
                 return
 
-            success = src.flows.preprocessing.subflows.process_song_annotations_flow(
-                song_id=song_id_int, base_path=str(Path(data_dir))
-            )
+            @typed_observe()
+            def run_preprocessing() -> bool:
+                langfuse_context.update_current_trace(
+                    name="song_preprocessing", session_id=session_id
+                )
+                return src.flows.preprocessing.subflows.process_song_annotations_flow(
+                    song_id=song_id_int, base_path=str(Path(data_dir))
+                )
+
+            success = run_preprocessing()
             if not success:
                 print("\n❌ Preprocessing failed")
                 return
@@ -135,9 +187,17 @@ def run_pipeline(
             if not song_path or not song_path.exists():
                 print("\n❌ Vocabulary analysis failed: song path not found")
                 return
-            success = asyncio.run(
-                src.flows.generation.main.main(song_path=str(song_path))
-            )
+
+            @typed_observe()
+            def run_analysis() -> bool:
+                langfuse_context.update_current_trace(
+                    name="song_analysis", session_id=session_id
+                )
+                return asyncio.run(
+                    src.flows.generation.main.main(song_path=str(song_path))
+                )
+
+            success = run_analysis()
             if not success:
                 print("\n❌ Vocabulary analysis failed")
                 return
