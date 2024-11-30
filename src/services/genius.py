@@ -49,17 +49,25 @@ class GeniusAPI:
         self, endpoint: str, params: Optional[Dict[str, str]] = None
     ) -> Dict[str, Any]:
         """Make a rate-limited request to the Genius API."""
-        if self.last_request_time:
-            time_since_last = time.time() - self.last_request_time
-            if time_since_last < self.rate_limit:
-                time.sleep(self.rate_limit - time_since_last)
-
-        url = f"{self.base_url}/{endpoint}"
         try:
+            # Rate limiting
+            elapsed = time.time() - self.last_request_time
+            if elapsed < self.rate_limit:
+                time.sleep(self.rate_limit - elapsed)
+
+            url = f"{self.base_url}/{endpoint}"
             response = requests.get(
                 url, headers=self.headers, params=params, timeout=10
             )
             self.last_request_time = time.time()
+
+            if not response.ok:
+                logger.error(
+                    f"Error {response.status_code} from {endpoint}: {response.reason}"
+                )
+                logger.error(
+                    f"Response body: {response.text[:500]}"
+                )  # Log first 500 chars of response
 
             response.raise_for_status()
             return cast(Dict[str, Any], response.json())
@@ -68,11 +76,11 @@ class GeniusAPI:
             logger.error(f"Request to {endpoint} timed out")
             raise
         except HTTPError as e:
-            if e.response.status_code == 429:
+            if e.response is not None and e.response.status_code == 429:
                 logger.warning("Rate limit exceeded, waiting before retry")
                 time.sleep(60)  # Wait a minute before retrying
                 return self._make_request(endpoint, params)
-            logger.error(f"HTTP error {e.response.status_code} for {endpoint}")
+            logger.error(f"HTTP error for {endpoint}: {str(e)}")
             raise
         except RequestException as e:
             logger.error(f"Request failed: {str(e)}")
@@ -90,6 +98,7 @@ class GeniusAPI:
             GeniusMetadata if found, None otherwise
         """
         try:
+            logger.info(f"Searching Genius for '{song_name}' by {artist_name}")
             # Search for the song
             search_results = self._make_request(
                 "search", params={"q": f"{song_name} {artist_name}"}
@@ -98,6 +107,10 @@ class GeniusAPI:
             # Get all matching songs
             matches = []
             hits = search_results["response"]["hits"]
+            total_hits = len(hits)
+            logger.info(
+                f"Found {total_hits} search results for '{song_name}' by {artist_name}"
+            )
 
             # Split artist name for multiple artists
             artist_parts = []
@@ -115,25 +128,30 @@ class GeniusAPI:
             for hit in hits:
                 if hit["type"] == "song":
                     result = hit["result"]
-                    # Check if any of the artists match
                     result_artist = result["primary_artist"]["name"].lower()
+                    result_title = result["title"]
 
                     # Check if any part of the artist name matches
-                    if any(part in result_artist for part in artist_parts):
+                    artist_match = any(part in result_artist for part in artist_parts)
+                    if artist_match:
                         # Get full song data
+                        logger.info(
+                            f"Found matching song: '{result_title}' by {result['primary_artist']['name']}"
+                        )
                         song_response = self._make_request(f"songs/{result['id']}")
                         full_song_data = song_response["response"]["song"]
 
                         # Skip remixes unless specifically searching for one
                         title = full_song_data["title"].lower()
                         if "remix" in title and "remix" not in song_name.lower():
+                            logger.debug(f"Skipping remix: {full_song_data['title']}")
                             continue
 
                         matches.append(full_song_data)
 
             if not matches:
                 logger.warning(
-                    f"No matching songs found for {song_name} by {artist_name}"
+                    f"No matching songs found for '{song_name}' by {artist_name}"
                 )
                 return None
 
@@ -144,7 +162,8 @@ class GeniusAPI:
             chosen_song = matches[0]
 
             logger.info(
-                f"Selected '{chosen_song['title']}' with {chosen_song['stats'].get('pageviews', 0)} pageviews"
+                f"Selected song: '{chosen_song['title']}' by {chosen_song['primary_artist']['name']} "
+                f"(ID: {chosen_song['id']}, {chosen_song['stats'].get('pageviews', 0):,} views)"
             )
             return GeniusMetadata.from_dict(chosen_song)
 
@@ -153,28 +172,42 @@ class GeniusAPI:
             return None
 
     def get_song_annotations(self, song_id: int) -> List[Dict[str, Any]]:
-        """Get annotations for a song.
-
-        Args:
-            song_id: Genius song ID
-
-        Returns:
-            List of annotation dictionaries
-        """
+        """Get annotations for a song."""
         try:
+            logger.info(f"Fetching annotations for song ID: {song_id}")
             data = self._make_request(
-                f"songs/{song_id}/referents",
+                "referents",
                 params={
                     "song_id": str(song_id),
                     "text_format": "dom",
                     "per_page": "50",
                 },
             )
-            return cast(
-                List[Dict[str, Any]], data.get("response", {}).get("referents", [])
+            annotations = data.get("response", {}).get("referents", [])
+            verified_count = sum(
+                1
+                for a in annotations
+                if a.get("annotations", [{}])[0].get("verified", False)
             )
-        except Exception as e:
-            logger.error(f"Failed to get annotations: {e}")
+
+            logger.info(
+                f"Retrieved {len(annotations)} annotations "
+                f"({verified_count} verified, {len(annotations) - verified_count} unverified)"
+            )
+            return cast(List[Dict[str, Any]], annotations)
+        except HTTPError as e:
+            if e.response.status_code == 403:
+                logger.warning(
+                    "Unable to fetch annotations due to permission scope limitations. "
+                    "This is non-blocking - continuing without annotations."
+                )
+                return []
+            logger.error(
+                f"Failed to get annotations: HTTP error {e.response.status_code}"
+            )
+            return []
+        except (Timeout, RequestException) as e:
+            logger.error(f"Failed to get annotations: {str(e)}")
             return []
 
     def save_song_metadata(

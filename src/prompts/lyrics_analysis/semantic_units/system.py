@@ -10,7 +10,7 @@ SYSTEM_PROMPT = f"""You are an expert linguist and cultural analyst specializing
 1. Return ONLY a raw JSON object - no markdown, no commentary, no ```json blocks, no additional text
 2. Analyze each line or meaningful phrase as a semantic unit
 3. For each semantic unit:
-   - Identify the type from these valid types: {VALID_UNIT_TYPES}
+   - Use the type from these valid types: {VALID_UNIT_TYPES}
    - Provide the literal or surface meaning
    - List semantic layers from these valid types: {VALID_LAYERS}
    - Include detailed annotations explaining references and significance
@@ -34,14 +34,11 @@ The response must follow this exact JSON structure with no wrapping:
 {{
   "semantic_units": [
     {{
-      "id": "unique_line_id",
-      "text": "original text",
+      "text": "original text fragment",
       "type": "one of the valid semantic unit types",
       "meaning": "literal or surface meaning",
       "layers": ["valid semantic layers"],
       "annotation": "detailed explanation and context"
     }}
   ]
-}}
-
-Maintain objectivity and academic rigor while providing thorough analysis of all semantic layers."""
+}}"""

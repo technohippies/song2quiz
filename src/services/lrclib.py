@@ -51,40 +51,79 @@ class LRCLibAPI:
             )
             self.last_request_time = time.time()
 
-            logger.debug(f"LRCLib API Status Code: {response.status_code}")
             response.raise_for_status()
+            return cast(Dict[str, Any], response.json())
 
-            data = cast(Dict[str, Any], response.json())
-            logger.debug(f"LRCLib API Response Data: {json.dumps(data, indent=2)}")
-            return data
-
-        except Timeout:
-            logger.error(f"Request to {endpoint} timed out")
-            raise
-        except HTTPError as e:
-            if e.response.status_code == 429:
-                logger.warning("Rate limit exceeded, waiting before retry")
-                time.sleep(60)  # Wait a minute before retrying
-                return self._make_request(endpoint, params)
-            logger.error(f"HTTP error {e.response.status_code} for {endpoint}")
-            raise
-        except RequestException as e:
-            logger.error(f"Request failed: {str(e)}")
+        except (HTTPError, RequestException, Timeout) as e:
+            logger.error(f"Error making request to LRCLib API: {str(e)}")
             raise
 
     def search_lyrics(self, artist: str, title: str) -> Dict[str, Any]:
-        """Search for lyrics by artist and title."""
+        """Search for lyrics by artist and title.
+
+        Args:
+            artist: Artist name
+            title: Track/song title
+
+        Returns:
+            Dictionary containing lyrics data or error
+        """
         try:
-            response = requests.get(
-                f"{self.base_url}/get",
-                params={"artist": artist, "track": title},
-                timeout=10,
+            return self._make_request(
+                "get", params={"artist_name": artist, "track_name": title}
             )
-            response.raise_for_status()
-            return cast(Dict[str, Any], response.json())
         except RequestException as e:
             logger.error(f"Error searching for lyrics: {e}")
             return {"error": str(e)}
+
+    def get_lyrics(self, artist_name: str, track_name: str) -> Dict[str, Any] | None:
+        """Get lyrics for a song from LRCLib.
+
+        Args:
+            artist_name: Name of the artist
+            track_name: Name of the track
+
+        Returns:
+            Dictionary containing lyrics data if found, None otherwise
+        """
+        try:
+            logger.debug(f"Making request to LRCLib API - URL: {self.base_url}/get")
+            response = requests.get(
+                f"{self.base_url}/get",
+                params={
+                    "artist_name": artist_name,
+                    "track_name": track_name,
+                },
+                headers=self.headers,
+            )
+            logger.debug(f"LRCLib API Status Code: {response.status_code}")
+
+            if response.status_code == 200:
+                data = cast(Dict[str, Any], response.json())
+                log_data = {
+                    "id": data.get("id"),
+                    "name": data.get("name"),
+                    "artistName": data.get("artistName"),
+                    "albumName": data.get("albumName"),
+                    "duration": data.get("duration"),
+                    "instrumental": data.get("instrumental"),
+                }
+                logger.debug(
+                    f"LRCLib API Response Data: {json.dumps(log_data, indent=2)}"
+                )
+                return data
+            elif response.status_code == 404:
+                logger.warning(f"No lyrics found for '{track_name}' by {artist_name}")
+                return None
+            else:
+                logger.warning(
+                    f"LRCLib API returned status code: {response.status_code}"
+                )
+                return None
+
+        except Exception as e:
+            logger.error(f"Error fetching lyrics: {str(e)}")
+            return None
 
     def save_lyrics(self, lyrics: LRCLibLyrics, song_path: Path) -> Optional[Path]:
         """
@@ -98,23 +137,21 @@ class LRCLibAPI:
             Path where lyrics were saved, None if error
         """
         try:
-            lyrics_path = song_path / "lrclib_lyrics.json"
+            # Save to lrclib_lyrics.json for raw data
+            lrclib_path = song_path / "lrclib_lyrics.json"
+            with open(lrclib_path, "w", encoding="utf-8") as f:
+                json.dump(lyrics.to_dict(), f, ensure_ascii=False, indent=2)
 
-            # Save as JSON, dataclass has built-in asdict() method
+            # Save to lyrics.json in the expected format for matching
+            lyrics_path = song_path / "lyrics.json"
             with open(lyrics_path, "w", encoding="utf-8") as f:
                 json.dump(
                     {
                         "source": lyrics.source,
-                        "match_score": lyrics.match_score,
-                        "lyrics": lyrics.lyrics,
                         "has_timestamps": lyrics.has_timestamps,
-                        "plain_lyrics": lyrics.plain_lyrics,
                         "timestamped_lines": [
-                            {"timestamp": str(line.timestamp), "text": line.text}
-                            for line in lyrics.timestamped_lines
-                        ]
-                        if lyrics.has_timestamps
-                        else [],
+                            line.to_dict() for line in lyrics.timestamped_lines
+                        ],
                     },
                     f,
                     ensure_ascii=False,

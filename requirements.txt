@@ -12,13 +12,13 @@ python-Levenshtein>=0.21.0
 textstat>=0.7.3
 python-dotenv>=0.19.0
 backoff>=2.2.1
-asyncio>=3.4.3
 pandas>=2.0.0
 PyYAML>=6.0.0
 nltk>=3.8.1
 ftfy>=6.1.1
 langfuse
 ruamel.yaml>=0.17.40
+openai>=1.0.0
 
 # Development dependencies
 pytest>=8.0.0
@@ -27,6 +27,7 @@ pytest-cov>=6.0.0
 pyright>=1.1.0
 ruff>=0.1.0
 mypy>=1.9.0
+typing-extensions>=4.0.0
 
 # Type stubs
 types-setuptools>=69.0.0

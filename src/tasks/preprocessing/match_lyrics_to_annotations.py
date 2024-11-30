@@ -1,9 +1,8 @@
-"""Task for matching lyrics with their corresponding annotations."""
+"""Task for matching lyrics to annotations."""
 
 import hashlib
 import json
 import logging
-from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -120,10 +119,10 @@ def match_lyrics_with_annotations(song_path: Path) -> bool:
     try:
         logger.info(f"Starting lyrics-annotation matching for {song_path.name}")
 
-        # Load lyrics
-        lyrics_path = song_path / "lyrics.json"
+        # Load processed lyrics
+        lyrics_path = song_path / "lyrics_processed.json"
         if not lyrics_path.exists():
-            logger.error(f"Lyrics not found at {lyrics_path}")
+            logger.error(f"Processed lyrics not found at {lyrics_path}")
             return False
 
         with open(lyrics_path) as f:
@@ -158,6 +157,10 @@ def match_lyrics_with_annotations(song_path: Path) -> bool:
                 continue
 
             line_text = line.get("text", "").strip()
+            # Skip empty lines or lines with just "..."
+            if not line_text or line_text == "...":
+                continue
+
             annotation, match_type = find_matching_annotation(line_text, annotations)
 
             if annotation:
@@ -202,28 +205,6 @@ def match_lyrics_with_annotations(song_path: Path) -> bool:
         output_path = song_path / "lyrics_with_annotations.json"
         with open(output_path, "w", encoding="utf-8") as f:
             json.dump(output, f, ensure_ascii=False, indent=2)
-
-        # Update processing metadata in songs.json
-        song_id = int(song_path.name)  # Song ID is the directory name
-        processing_data = {
-            "lyrics": {
-                "source": lyrics_data.get("source"),
-                "has_timestamps": True,
-                "total_lines": len(lyrics_data.get("timestamped_lines", [])),
-                "processed_at": datetime.now().isoformat(),
-            },
-            "annotations": {
-                "source": "genius",
-                "total_annotations": len(annotations),
-                "matches": matches,
-                "processed_at": datetime.now().isoformat(),
-            },
-        }
-
-        if not update_song_processing_metadata(
-            song_id, song_path.parent.parent, processing_data
-        ):
-            logger.warning("Failed to update processing metadata in songs.json")
 
         logger.info(f"Successfully saved matches to {output_path}")
         return True

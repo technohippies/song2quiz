@@ -27,16 +27,17 @@ def mock_song_dir(tmp_path: Path) -> Path:
     with open(song_dir / "annotations_cleaned.json", "w") as f:
         json.dump(cleaned_annotations, f)
 
-    # Create mock lyrics
+    # Create mock processed lyrics
     lyrics = {
-        "source": "test",
+        "source": "lrclib",
+        "has_timestamps": True,
         "timestamped_lines": [
             {"timestamp": "00:00.00", "text": "Yesterday"},
             {"timestamp": "00:05.00", "text": "All my troubles seemed so far away"},
         ],
     }
 
-    with open(song_dir / "lyrics.json", "w") as f:
+    with open(song_dir / "lyrics_processed.json", "w") as f:
         json.dump(lyrics, f)
 
     return song_dir
@@ -70,9 +71,13 @@ def test_match_lyrics_no_annotations_file(tmp_path: Path) -> None:
     empty_dir.mkdir()
 
     # Create only lyrics file
-    lyrics = {"timestamped_lines": [{"timestamp": "00:00.00", "text": "Test line"}]}
+    lyrics = {
+        "source": "lrclib",
+        "has_timestamps": True,
+        "timestamped_lines": [{"timestamp": "00:00.00", "text": "Test line"}],
+    }
 
-    with open(empty_dir / "lyrics.json", "w") as f:
+    with open(empty_dir / "lyrics_processed.json", "w") as f:
         json.dump(lyrics, f)
 
     with disable_run_logger():
@@ -102,9 +107,14 @@ def test_match_lyrics_exact_match(mock_song_dir: Path) -> None:
     with open(mock_song_dir / "annotations_cleaned.json", "w") as f:
         json.dump(cleaned_annotations, f)
 
-    lyrics = {"timestamped_lines": [{"timestamp": "00:00.00", "text": "Yesterday"}]}
+    # Create lyrics with exact match
+    lyrics = {
+        "source": "lrclib",
+        "has_timestamps": True,
+        "timestamped_lines": [{"timestamp": "00:00.00", "text": "Yesterday"}],
+    }
 
-    with open(mock_song_dir / "lyrics.json", "w") as f:
+    with open(mock_song_dir / "lyrics_processed.json", "w") as f:
         json.dump(lyrics, f)
 
     with disable_run_logger():
@@ -112,9 +122,10 @@ def test_match_lyrics_exact_match(mock_song_dir: Path) -> None:
 
     assert result is True
 
+    # Verify exact match
     with open(mock_song_dir / "lyrics_with_annotations.json") as f:
         matched_data = json.load(f)
-        first_line = matched_data["lyrics"][0]
-        assert first_line["text"] == "Yesterday"
-        assert first_line["annotation"] == "About the past"
-        assert first_line["annotation_id"] == 1
+
+    assert matched_data["lyrics"][0]["text"] == "Yesterday"
+    assert matched_data["lyrics"][0]["annotation"] == "About the past"
+    assert matched_data["stats"]["matches"]["by_type"]["exact"] == 1
