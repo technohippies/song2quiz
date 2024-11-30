@@ -13,6 +13,11 @@ venv/
 .env/
 .venv/
 
+# Environment files
+.env
+*.env
+.env.*
+
 # IDE
 .idea/
 .vscode/
@@ -40,4 +45,3 @@ Thumbs.db
 python
 source
 uv.lock
-.env

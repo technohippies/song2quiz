@@ -1,7 +1,7 @@
 """Test the song ingestion CLI."""
 
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 from click.testing import CliRunner
@@ -31,8 +31,11 @@ def test_ingest_song_cli_integration(tmp_path: Path) -> None:
         ),
     )
 
-    with patch("src.services.genius.GeniusAPI.search_song") as mock_search:
-        mock_search.return_value = mock_metadata
+    # Mock the entire GeniusAPI class
+    mock_api = MagicMock()
+    mock_api.search_song.return_value = mock_metadata
+
+    with patch("src.services.genius.GeniusAPI", return_value=mock_api):
         result = runner.invoke(
             cli,
             [
