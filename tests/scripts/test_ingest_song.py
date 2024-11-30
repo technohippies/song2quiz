@@ -31,11 +31,35 @@ def test_ingest_song_cli_integration(tmp_path: Path) -> None:
         ),
     )
 
-    # Mock the entire GeniusAPI class
-    mock_api = MagicMock()
-    mock_api.search_song.return_value = mock_metadata
+    # Create mock API instance with proper return values
+    mock_genius = MagicMock()
+    mock_genius.search_song.return_value = mock_metadata
+    mock_genius.get_song_annotations.return_value = {
+        "annotations": [
+            {
+                "id": 1,
+                "text": "Sample annotation",
+                "fragment": "Yesterday",
+                "range": {"start": 0, "end": 9},
+            }
+        ]
+    }
 
-    with patch("src.services.genius.GeniusAPI", return_value=mock_api):
+    mock_lrclib = MagicMock()
+    mock_lrclib.search_lyrics.return_value = {
+        "syncedLyrics": [
+            {"text": "Yesterday", "time": 0},
+            {"text": "All my troubles seemed so far away", "time": 5000},
+        ]
+    }
+
+    # Use patch.multiple to mock both APIs and update_song_catalog
+    with patch.multiple(
+        "src.flows.ingestion.subflows",
+        GeniusAPI=MagicMock(return_value=mock_genius),
+        LRCLibAPI=MagicMock(return_value=mock_lrclib),
+        update_song_catalog=MagicMock(),
+    ):
         result = runner.invoke(
             cli,
             [
